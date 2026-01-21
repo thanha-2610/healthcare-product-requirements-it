@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { motion } from "framer-motion"; 
+import AuthDialog from "./auth-dialog";
+import Image from "next/image";
 
 const categories = [
   {
@@ -47,11 +48,11 @@ export function CommerceHero() {
   return (
     <div className="w-full relative container px-2 mx-auto max-w-7xl min-h-screen">
 
-        <div className="mt-6 bg-accent/50 rounded-2xl relative">
+        <div className="mt-6 bg-sky-100/50 rounded-2xl relative">
           <header className="flex items-center">
             <div className="w-full md:w-2/3 lg:w-1/2 bg-background/95 backdrop-blur-sm p-4 rounded-br-2xl flex items-center gap-2">
               <a href="#" className="text-xl font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                Commerce_
+                Healthcare
               </a>
 
               <nav className="hidden lg:flex items-center justify-between w-full">
@@ -85,7 +86,7 @@ export function CommerceHero() {
                   <SheetHeader className="p-6 text-left border-b border-border/50">
                     <SheetTitle className="flex items-center justify-between">
                       <a href="#" className="text-xl font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                        Commerce_
+                        Healthcare
                       </a>
                     </SheetTitle>
                   </SheetHeader>
@@ -116,25 +117,14 @@ export function CommerceHero() {
                   </div>
                   <Separator className="mx-6" />
                   <div className="p-6">
-                    <Button className="w-full h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300 shadow-lg hover:shadow-xl">
-                      Log In
-                      <ArrowUpRight className="w-4 h-4 ml-2" />
-                    </Button>
+                                <AuthDialog />
                   </div>
                 </SheetContent>
               </Sheet>
             </div>
 
             <div className="hidden md:flex w-1/2 justify-end items-center pr-4 gap-4 ml-auto">
-              <Button
-                variant="secondary"
-                className="cursor-pointer bg-primary-foreground p-0 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 group"
-              >
-                <span className="pl-4 py-2 text-sm font-medium">Log In</span>
-                <div className="rounded-full flex items-center justify-center m-auto bg-background w-10 h-10 ml-2 group-hover:scale-110 transition-transform duration-300">
-                  <ArrowUpRight className="w-5 h-5" />
-                </div>
-              </Button>
+             <AuthDialog />
             </div>
           </header>
 
@@ -176,7 +166,7 @@ export function CommerceHero() {
           {categories.map((category, index) => (
             <motion.div
               key={category.title}
-              className="group relative bg-muted/50 backdrop-blur-sm rounded-3xl p-4 sm:p-6 min-h-[250px] sm:min-h-[300px] w-full overflow-hidden transition-all duration-500"
+              className="group relative bg-sky-100/50 backdrop-blur-sm rounded-3xl p-4 sm:p-6 min-h-[250px] sm:min-h-[300px] w-full overflow-hidden transition-all duration-500"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
@@ -186,7 +176,9 @@ export function CommerceHero() {
                   {category.title}
                 </h2>
                 <div className="absolute inset-0 flex items-center justify-center p-4">
-                  <img
+                  <Image
+                    height={200}
+                    width={200}
                     src={category.image}
                     alt={category.title}
                     className="w-full max-w-[min(40vw,200px)] sm:max-w-[min(30vw,180px)] md:max-w-[min(25vw,160px)] lg:max-w-[min(20vw,140px)] h-auto object-contain opacity-90 group-hover:scale-110 group-hover:opacity-100 transition-all duration-500"
