@@ -19,42 +19,34 @@ interface FeatureItem {
 interface Feature197Props {
   features: FeatureItem[];
 }
-
 const defaultFeatures: FeatureItem[] = [
   {
     id: 1,
-    title: "Ready-to-Use UI Blocks",
-    image: "/images/block/placeholder-1.svg",
+    title: "Chăm sóc sức khỏe cá nhân mỗi ngày",
+    image: "/young-doctor-vaccinating-little-girl.jpg",
     description:
-      "Browse through our extensive collection of pre-built UI blocks designed with shadcn/ui. Each block is carefully crafted to be responsive, accessible, and easily customizable. Simply copy and paste the code into your project.",
+      "Duy trì thói quen chăm sóc cá nhân đúng cách giúp cơ thể luôn khỏe mạnh và tràn đầy năng lượng. Việc lựa chọn sản phẩm phù hợp, kết hợp sinh hoạt điều độ sẽ góp phần nâng cao chất lượng cuộc sống hằng ngày.",
   },
   {
     id: 2,
-    title: "Tailwind CSS & TypeScript",
-    image: "/images/block/placeholder-2.svg",
+    title: "Bí quyết cải thiện giấc ngủ tự nhiên",
+    image: "/medium-shot-three-doctors-consulting-medical-case.jpg",
     description:
-      "Built with Tailwind CSS for rapid styling and TypeScript for type safety. Our blocks leverage the full power of Tailwind's utility classes while maintaining clean, type-safe code that integrates seamlessly with your Next.js projects.",
+      "Giấc ngủ chất lượng đóng vai trò quan trọng trong việc phục hồi thể chất và tinh thần. Xây dựng thói quen ngủ khoa học và sử dụng các giải pháp hỗ trợ phù hợp có thể giúp bạn ngủ sâu và ngon hơn.",
   },
   {
     id: 3,
-    title: "Dark Mode & Customization",
-    image: "/images/block/placeholder-3.svg",
+    title: "Sử dụng thực phẩm chức năng đúng cách",
+    image: "/medical-banner-with-stethoscope.jpg",
     description:
-      "Every block supports dark mode out of the box and can be customized to match your brand. Modify colors, spacing, and typography using Tailwind's configuration. The shadcn/ui theming system makes it easy to maintain consistency across your site.",
+      "Thực phẩm chức năng giúp bổ sung dưỡng chất cần thiết cho cơ thể khi chế độ ăn chưa đáp ứng đủ. Hiểu rõ công dụng và sử dụng hợp lý sẽ giúp tối ưu hiệu quả chăm sóc sức khỏe.",
   },
   {
     id: 4,
-    title: "Accessibility First",
-    image: "/images/block/placeholder-4.svg",
+    title: "Thiết bị y tế gia đình – Theo dõi sức khỏe tại nhà",
+    image: "/veterinarian-conducting-experiment-laboratory.jpg",
     description:
-      "All blocks are built with accessibility in mind, following WCAG guidelines. They include proper ARIA labels, keyboard navigation support, and semantic HTML structure. Ensure your website is usable by everyone without extra effort.",
-  },
-  {
-    id: 5,
-    title: "Modern Development Stack",
-    image: "/images/block/placeholder-5.svg",
-    description:
-      "Built for modern web development with React 18, Next.js 14, and the latest shadcn/ui components. Take advantage of React Server Components, TypeScript strict mode, and other cutting-edge features while maintaining excellent performance.",
+      "Các thiết bị y tế gia đình giúp bạn dễ dàng theo dõi tình trạng sức khỏe hằng ngày. Chủ động kiểm tra tại nhà hỗ trợ phát hiện sớm các dấu hiệu bất thường và chăm sóc sức khỏe hiệu quả hơn.",
   },
 ];
 
@@ -63,7 +55,7 @@ const Feature197 = ({ features = defaultFeatures }: Feature197Props) => {
   const [activeImage, setActiveImage] = useState(features[0].image);
 
   return (
-    <section className="py-20 bg-sky-100/50">
+    <section className="py-20">
       <div className="container mx-auto">
         <div className="mb-12 flex w-full items-start justify-between gap-12">
           <div className="w-full md:w-1/2">
@@ -78,15 +70,13 @@ const Feature197 = ({ features = defaultFeatures }: Feature197Props) => {
                     className="cursor-pointer py-5 !no-underline transition"
                   >
                     <h6
-                      className={`text-xl font-semibold ${tab.id === activeTabId ? "text-foreground" : "text-muted-foreground"}`}
+                      className={`text-xl font-semibold ${tab.id === activeTabId ? "text-blue-600" : "text-muted-foreground"}`}
                     >
                       {tab.title}
                     </h6>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <p className="mt-3 text-muted-foreground">
-                      {tab.description}
-                    </p>
+                    <p className="mt-3 text-sky-500">{tab.description}</p>
                     <div className="mt-4 md:hidden">
                       <img
                         src={tab.image}
@@ -103,7 +93,7 @@ const Feature197 = ({ features = defaultFeatures }: Feature197Props) => {
             <img
               src={activeImage}
               alt="Feature preview"
-              className="aspect-[4/3] rounded-md object-cover pl-4"
+              className="aspect-[4/3] rounded-md object-cover"
             />
           </div>
         </div>

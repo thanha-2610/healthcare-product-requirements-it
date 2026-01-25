@@ -1,5 +1,7 @@
+"use client";
 import { InfiniteSlider } from "@/components/ui/infinite-slider";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
+import Image from "next/image";
 
 type Logo = {
   src: string;
@@ -19,14 +21,14 @@ export function LogoCloud({ logos }: LogoCloudProps) {
 
       <InfiniteSlider gap={42} reverse speed={60} speedOnHover={20}>
         {logos.map((logo) => (
-          <img
+          <Image
             alt={logo.alt}
-            className="pointer-events-none h-4 select-none md:h-5 dark:brightness-0 dark:invert"
-            height="auto"
+            className="pointer-events-none select-none object-contain dark:brightness-0 dark:invert"
+            height={80}
             key={`logo-${logo.alt}`}
             loading="lazy"
             src={logo.src}
-            width="auto"
+            width={200}
           />
         ))}
       </InfiniteSlider>

@@ -1,117 +1,150 @@
-"use client"
-
-import { useState, useId } from "react"
-import { Button } from "@/components/ui/button"
+"use client";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Eye, EyeOff } from "lucide-react"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import api from "../lib/axios";
+import { useAuthStore } from "./store/authStore";
 
 export default function AuthDialog() {
-  const [mode, setMode] = useState<"signup" | "login">("signup")
-  const [showPassword, setShowPassword] = useState(false)
-  const id = useId()
+  const [step, setStep] = useState<"login" | "signup" | "survey">("login");
+  const [open, setOpen] = useState(false);
+  const { register, handleSubmit, watch } = useForm();
+  const { login, isLoggedIn, user, logout } = useAuthStore();
 
-  const toggleMode = () => setMode(mode === "signup" ? "login" : "signup")
-  const togglePassword = () => setShowPassword(!showPassword)
+  const onSubmit = async (data: any) => {
+    try {
+      if (step === "login") {
+        const res = await api.post("/auth/login", data);
+        login(res.data.user);
+        if (!res.data.user.profile && !localStorage.getItem("user_profile"))
+          setStep("survey");
+        else setOpen(false);
+      } else if (step === "signup") {
+        await api.post("/auth/signup", data);
+        login(data);
+        setStep("survey");
+      } else {
+        localStorage.setItem("user_profile", JSON.stringify(data));
+        setOpen(false);
+        window.location.reload();
+      }
+    } catch (e) {
+      alert("Thất bại! Nhã kiểm tra lại thông tin nhé.");
+    }
+  };
+
+  if (isLoggedIn)
+    return (
+      <div className="flex items-center gap-4">
+        <span className="font-bold text-emerald-600">Hi, {user.name}</span>
+        <Button variant="ghost" onClick={logout} className="text-red-500">
+          Logout
+        </Button>
+      </div>
+    );
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="rounded-lg">Sign up / Login</Button>
+        <Button className="rounded-full bg-emerald-600 px-8">Bắt đầu</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md !rounded-2xl">
-        <div className="flex flex-col items-center gap-2">
-          <DialogHeader>
-            <DialogTitle className="sm:text-center">
-              {mode === "signup" ? "Sign Up" : "Login"}
-            </DialogTitle>
-            <DialogDescription className="sm:text-center">
-              {mode === "signup"
-                ? "We just need a few details to get you started."
-                : "Enter your credentials to log in."}
-            </DialogDescription>
-          </DialogHeader>
-        </div>
+      <DialogContent className="sm:max-w-md !rounded-[2rem]">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={step}
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+          >
+            <DialogHeader className="mb-4">
+              <DialogTitle className="text-2xl font-black">
+                {step === "login"
+                  ? "Đăng nhập"
+                  : step === "signup"
+                    ? "Đăng ký"
+                    : "Khảo sát sức khỏe 🧠"}
+              </DialogTitle>
+            </DialogHeader>
 
-        <form className="space-y-4">
-          {mode === "signup" && (
-            <div className="space-y-4">
-              <div className="*:not-first:mt-2">
-                <Label htmlFor={`${id}-name`}>Full name</Label>
-                <Input
-                  id={`${id}-name`}
-                  placeholder="Matt Welsh"
-                  type="text"
-                  required
-                  className="rounded-lg"
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div className="*:not-first:mt-2">
-              <Label htmlFor={`${id}-email`}>Email</Label>
-              <Input
-                id={`${id}-email`}
-                placeholder="hi@yourcompany.com"
-                type="email"
-                required
-                className="rounded-lg"
-              />
-            </div>
-            <div className="relative">
-              <Label htmlFor={`${id}-password`}>Password</Label>
-              <Input
-                id={`${id}-password`}
-                placeholder="Enter your password"
-                type={showPassword ? "text" : "password"}
-                required
-                className="rounded-lg pr-10"
-              />
-              <button
-                type="button"
-                onClick={togglePassword}
-                className="absolute right-3 top-[38px] text-muted-foreground"
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {step !== "survey" ? (
+                <>
+                  {step === "signup" && (
+                    <Input
+                      {...register("name")}
+                      placeholder="Tên của bạn"
+                      required
+                    />
+                  )}
+                  <Input
+                    {...register("email")}
+                    type="email"
+                    placeholder="Email"
+                    required
+                  />
+                  <Input
+                    {...register("password")}
+                    type="password"
+                    placeholder="Mật khẩu"
+                    required
+                  />
+                </>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <Label>Vấn đề bạn quan tâm</Label>
+                    <textarea
+                      {...register("diseases")}
+                      className="w-full border p-2 rounded-lg h-20"
+                    />
+                  </div>
+                  <Input
+                    {...register("age")}
+                    type="number"
+                    placeholder="Tuổi"
+                  />
+                  <Input
+                    {...register("weight")}
+                    type="number"
+                    placeholder="Cân nặng (kg)"
+                  />
+                </div>
+              )}
+              <Button
+                type="submit"
+                className="w-full py-6 bg-emerald-600 rounded-xl font-bold"
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+                {step === "login"
+                  ? "Vào hệ thống"
+                  : step === "signup"
+                    ? "Tạo tài khoản"
+                    : "Hoàn tất & Gợi ý"}
+              </Button>
+            </form>
+            <div className="mt-4 text-center text-sm">
+              {step === "login" ? (
+                <button onClick={() => setStep("signup")}>
+                  Chưa có tài khoản? Đăng ký
+                </button>
+              ) : (
+                <button onClick={() => setStep("login")}>
+                  Đã có tài khoản? Đăng nhập
+                </button>
+              )}
             </div>
-          </div>
-
-          <Button type="button" className="w-full rounded-lg">
-            {mode === "signup" ? "Sign Up" : "Login"}
-          </Button>
-        </form>
-
-        <div className="mt-2 text-center text-sm text-muted-foreground">
-          {mode === "signup" ? (
-            <>
-              Already have an account?{" "}
-              <button className="underline" onClick={toggleMode}>
-                Login
-              </button>
-            </>
-          ) : (
-            <>
-              Dont have an account?{" "}
-              <button className="underline" onClick={toggleMode}>
-                Sign Up
-              </button>
-            </>
-          )}
-        </div>
-
-        
+          </motion.div>
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
