@@ -46,7 +46,7 @@ export default function AuthDialog() {
   if (isLoggedIn)
     return (
       <div className="flex items-center gap-4">
-        <span className="font-bold text-emerald-600">Hi, {user.name}</span>
+        <span className="font-bold text-emerald-600">Hi, {user?.name}</span>
         <Button variant="ghost" onClick={logout} className="text-red-500">
           Logout
         </Button>

@@ -40,7 +40,7 @@ export function NotFound({
         <Button variant="outline">Search</Button>
       </div>
       <div className="mt-10 flex flex-col sm:flex-row sm:items-center sm:justify-center gap-y-3 gap-x-6">
-        <Button className="-order-1 sm:order-none" asChild>
+        <Button className="-order-1 sm:order-none hover:bg-blue-700 bg-blue-600" asChild>
           <Link href="/">
             {" "}
             <Home

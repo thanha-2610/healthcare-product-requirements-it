@@ -1,14 +1,10 @@
 import { Feature197 } from "@/components/accordion-feature-section";
 import { ExpandableChatDemo } from "@/components/chat-box-demo";
 import { CommerceHero } from "@/components/commerce-hero";
-import Footer from "@/components/main-layout/ui/footer-1";
 import { Gallery6 } from "@/components/gallery6";
 import { LogoCloud } from "@/components/logo-cloud-4";
 import { cn } from "@/lib/utils";
 import MainLayout from "@/components/main-layout";
-import { useEffect, useState } from "react";
-import api from "../lib/axios";
-import AuthDialog from "../components/AuthDialog";
 
 const demoDataGallery6 = {
   heading: "Featured Projects",
@@ -126,41 +122,6 @@ const logos = [
 ];
 
 export default function Home() {
-  const [personalRecs, setPersonalRecs] = useState([]);
-  const [themeRecs, setThemeRecs] = useState([]);
-  const [recent, setRecent] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-
-  useEffect(() => {
-    // 1. Lấy gợi ý cá nhân
-    const    = localStorage.getItem("user_profile");
-    if (profile) {
-      const p = JSON.parse(profile);
-      api
-        .post("/recommend", {
-          query: `${p.gender} ${p.age} tuổi ${p.diseases}`,
-        })
-        .then((res) => setPersonalRecs(res.data));
-    }
-    // 2. Lấy gợi ý mặc định
-    api
-      .post("/recommend", { query: "sức khỏe" })
-      .then((res) => setThemeRecs(res.data));
-    // 3. Lấy sản phẩm đã xem
-    setRecent(JSON.parse(localStorage.getItem("recent_viewed") || "[]"));
-  }, []);
-
-  const handleDetail = (item: any) => {
-    setSelectedProduct(item);
-    const current = JSON.parse(localStorage.getItem("recent_viewed") || "[]");
-    const updated = [
-      item,
-      ...current.filter((p: any) => p.id !== item.id),
-    ].slice(0, 4);
-    localStorage.setItem("recent_viewed", JSON.stringify(updated));
-    setRecent(updated);
-  };
-
   return (
     <MainLayout>
       <CommerceHero />
