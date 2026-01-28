@@ -12,27 +12,31 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import AuthDialog from "@/components/auth-dialog";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const navigation = [
   { name: "Home", href: "#" },
   { name: "Shop", href: "#" },
+  { name: "Search", href: "/search" },
   { name: "Collections", href: "#" },
   { name: "Blog", href: "#" },
 ];
 
 export function Navbar() {
+  const router = useRouter();
+
   return (
-    <header className="flex items-center">
+    <header className="flex items-center bg-blue-100">
       {/* Left side: Logo & Desktop Nav */}
-      <div className="w-full md:w-2/3 lg:w-1/2 bg-background/95 backdrop-blur-sm p-4 rounded-br-2xl flex items-center gap-2">
+      <div className="w-full md:w-2/3 lg:w-1/2 backdrop-blur-sm p-4 rounded-br-2xl flex items-center gap-2 bg-white">
         <Link
           href="/"
-          className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-sky-500/80 bg-clip-text text-transparent"
+          className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-cyan-500/80 bg-clip-text text-transparent"
         >
           TN.CARE
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-2 w-full">
+        <nav className="hidden lg:flex items-center justify-between w-full">
           {navigation.map((item) => (
             <button
               key={item.name}
@@ -41,13 +45,13 @@ export function Navbar() {
               {item.name}
             </button>
           ))}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="cursor-pointer hover:text-primary transition-colors"
-          >
-            <Search className="w-5 h-5" />
-          </Button>
+            <Button
+              variant="ghost"
+              size="icon"onClick={() => router.push('/search')}
+              className="cursor-pointer hover:text-primary transition-colors"
+            >
+              <Search className="w-5 h-5" />
+            </Button> 
           <Button
             variant="ghost"
             size="icon"
@@ -76,7 +80,7 @@ export function Navbar() {
               <SheetTitle>
                 <Link
                   href="/"
-                  className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-sky-500/80 bg-clip-text text-transparent"
+                  className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-cyan-500/80 bg-clip-text text-transparent"
                 >
                   TN.CARE
                 </Link>
@@ -84,8 +88,9 @@ export function Navbar() {
             </SheetHeader>
             <nav className="flex flex-col p-6 space-y-1">
               {navigation.map((item) => (
-                <Button
+                <Button 
                   key={item.name}
+                  size="icon"onClick={() => router.push(item?.href)}
                   variant="ghost"
                   className="justify-start px-2 h-12 text-base font-medium hover:bg-accent/50 hover:text-primary transition-colors"
                 >
@@ -93,25 +98,8 @@ export function Navbar() {
                 </Button>
               ))}
             </nav>
-            <Separator className="mx-6" />
-            <div className="p-6 flex flex-col gap-4">
-              <Button
-                variant="outline"
-                className="justify-start gap-2 h-12 hover:bg-accent/50"
-              >
-                <Search className="w-4 h-4" /> Search
-              </Button>
-              <Button
-                variant="outline"
-                className="justify-start gap-2 h-12 hover:bg-accent/50 relative"
-              >
-                <ShoppingBasket className="w-4 h-4" /> Cart
-                <span className="absolute right-3 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
-                  3
-                </span>
-              </Button>
-            </div>
-            <Separator className="mx-6" />
+            
+            <Separator />
             <div className="p-6">
               <AuthDialog />
             </div>

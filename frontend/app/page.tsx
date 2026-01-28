@@ -124,33 +124,35 @@ const logos = [
 export default function Home() {
   return (
     <MainLayout>
-      <CommerceHero />
-      <Gallery6 {...demoDataGallery6} />
-      <Feature197 {...demoDataFeature197} />
-      <div className="h-96 w-full place-content-center px-4">
-        <div
-          aria-hidden="true"
-          className={cn(
-            "-top-1/2 -translate-x-1/2 pointer-events-none absolute left-1/2 h-[120vmin] w-[120vmin] rounded-b-full",
-            "bg-[radial-gradient(ellipse_at_center,--theme(--color-foreground/.1),transparent_50%)]",
-            "blur-[30px]",
-          )}
-        />
-        <div className="w-full">
-          <h2 className="mb-5 text-center">
-            <span className="block font-medium text-2xl text-sky-300">
-              Thương hiệu sản phẩm sức khỏe đáng tin cậy
-            </span>
-            <span className="font-black text-2xl text-blue-700 tracking-tight md:text-3xl max-w-7xl">
-              Các thương hiệu được lựa chọn cẩn thận mang lại chất lượng và độ
-              tin cậy trong chăm sóc sức khỏe
-            </span>
-          </h2>
-
-          <LogoCloud logos={logos} />
+      <div className=" container px-2 mx-auto">
+        <CommerceHero />
+        <Gallery6 {...demoDataGallery6} />
+        <Feature197 {...demoDataFeature197} />
+        <div className="h-96 w-full place-content-center px-4">
+          <div
+            aria-hidden="true"
+            className={cn(
+              "-top-1/2 -translate-x-1/2 pointer-events-none absolute left-1/2 h-[120vmin] w-[120vmin] rounded-b-full",
+              "bg-[radial-gradient(ellipse_at_center,--theme(--color-foreground/.1),transparent_50%)]",
+              "blur-[30px]",
+            )}
+          />
+          <div className="w-full">
+            <h2 className="mb-5 text-center">
+              <span className="block font-medium text-2xl text-cyan-300">
+                Thương hiệu sản phẩm sức khỏe đáng tin cậy
+              </span>
+              <span className="font-black text-2xl text-blue-700 tracking-tight md:text-3xl max-w-7xl">
+                Các thương hiệu được lựa chọn cẩn thận mang lại chất lượng và độ
+                tin cậy trong chăm sóc sức khỏe
+              </span>
+            </h2>
+  
+            <LogoCloud logos={logos} />
+          </div>
         </div>
+        <ExpandableChatDemo />
       </div>
-      <ExpandableChatDemo />
     </MainLayout>
   );
 }

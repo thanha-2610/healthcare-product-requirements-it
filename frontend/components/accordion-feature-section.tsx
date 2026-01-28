@@ -76,7 +76,7 @@ const Feature197 = ({ features = defaultFeatures }: Feature197Props) => {
                     </h6>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <p className="mt-3 text-sky-500">{tab.description}</p>
+                    <p className="mt-3 text-cyan-500">{tab.description}</p>
                     <div className="mt-4 md:hidden">
                       <img
                         src={tab.image}

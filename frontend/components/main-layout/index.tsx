@@ -9,7 +9,7 @@ const MainLayout = ({ children }: Props) => {
   return (
     <div>
       <Navbar />
-      <div className="w-full relative container px-2 mx-auto max-w-7xl min-h-screen">
+      <div className="w-full relative min-h-screen">
         {children}
       </div>
       <Footer />

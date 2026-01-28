@@ -40,7 +40,7 @@ export function CommerceHero() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="inline-block px-4 py-1.5 mb-6 text-sm font-medium tracking-wider text-sky-600 uppercase bg-sky-100 rounded-full"
+            className="inline-block px-4 py-1.5 mb-6 text-sm font-medium tracking-wider text-cyan-600 uppercase bg-cyan-100 rounded-full"
           >
             Machine Learning Powered
           </motion.div>
@@ -51,11 +51,11 @@ export function CommerceHero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-600 to-cyan-400 bg-clip-text text-transparent">
               Hệ thống gợi ý
             </span>
             <br />
-            <span className="text-slate-900">Sức khỏe cá nhân hóa</span>
+            <span className="text-blue-900">Sức khỏe cá nhân hóa</span>
           </motion.h1>
 
           <motion.p
@@ -84,11 +84,11 @@ export function CommerceHero() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mx-auto">
           {categories.map((category, index) => (
             <motion.div
               key={category.title}
-              className="group relative bg-white border border-slate-100 shadow-sm hover:shadow-xl rounded-3xl p-6 min-h-[320px] overflow-hidden transition-all duration-500"
+              className="group relative bg-white border border-blue-200 shadow-sm hover:shadow-md shadow-sky-200 rounded-3xl p-6 min-h-[320px] overflow-hidden transition-all duration-500"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -100,7 +100,7 @@ export function CommerceHero() {
 
                 <div className="flex-grow flex items-center justify-center relative">
                   {/* Vòng tròn decor phía sau ảnh */}
-                  <div className="absolute w-32 h-32 bg-sky-50 rounded-full group-hover:scale-125 transition-transform duration-500" />
+                  <div className="absolute w-32 h-32 bg-cyan-50 rounded-full group-hover:scale-125 transition-transform duration-500" />
 
                   <Image
                     height={180}
