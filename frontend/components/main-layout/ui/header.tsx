@@ -14,8 +14,7 @@ import AuthDialog from "@/components/auth-dialog";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-const navigation = [
-  { name: "Home", href: "#" },
+const navigation = [ 
   { name: "Shop", href: "#" },
   { name: "Search", href: "/search" },
   { name: "Collections", href: "#" },
@@ -38,27 +37,16 @@ export function Navbar() {
 
         <nav className="hidden lg:flex items-center justify-between w-full">
           {navigation.map((item) => (
-            <button
+            <Link 
               key={item.name}
+              href={item?.href}
               className="px-4 py-2 text-sm font-medium cursor-pointer relative group hover:text-primary transition-colors bg-transparent border-none"
             >
               {item.name}
-            </button>
+            </Link>
           ))}
-            <Button
-              variant="ghost"
-              size="icon"onClick={() => router.push('/search')}
-              className="cursor-pointer hover:text-primary transition-colors"
-            >
-              <Search className="w-5 h-5" />
-            </Button> 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="cursor-pointer hover:text-primary transition-colors"
-          >
-            <ShoppingBasket className="w-5 h-5" />
-          </Button>
+           
+          
         </nav>
 
         {/* Mobile Nav Trigger */}

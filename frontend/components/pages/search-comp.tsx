@@ -3,14 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, X, Filter, Clock, TrendingUp, Star, CircleChevronLeft, Lightbulb } from "lucide-react";
+import { Search, X, Filter, Clock, TrendingUp, Star, CircleChevronLeft, Lightbulb, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card"; 
 import { useProductStore } from "@/store/productStore";
 import { useAuthStore } from "@/store/authStore";
 import { useSearch } from "@/hooks/useApi";
-import { formatProductDescription, capitalizeFirst, timeAgo } from "@/utils";
+import { formatProductDescription } from "@/utils";
 import { Product } from "@/types";
 import { Badge } from "../ui/badge";
 import { Skeleton } from "../ui/skeleton";
@@ -21,6 +21,7 @@ export default function SearchComp() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedAgeRange, setSelectedAgeRange] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState<"relevance" | "match" | "name">("relevance");
 
@@ -34,6 +35,15 @@ export default function SearchComp() {
   
   const { user } = useAuthStore();
   const { handleSearch } = useSearch();
+
+  // Age range options
+  const ageRanges = [
+    { id: "all", label: "Tất cả" },
+    { id: "18-25", label: "18-25" },
+    { id: "26-40", label: "26-40" },
+    { id: "41-60", label: "41-60" },
+    { id: "61+", label: "60+" }
+  ];
 
   // Load search history từ localStorage
   useEffect(() => {
@@ -56,13 +66,7 @@ export default function SearchComp() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Thực hiện search khi debouncedQuery thay đổi
-  useEffect(() => {
-    if (debouncedQuery) {
-      handleSearch(debouncedQuery);
-      saveToSearchHistory(debouncedQuery);
-    }
-  }, [debouncedQuery, handleSearch]);
+
 
   // Lấy categories khi component mount
   useEffect(() => {
@@ -78,6 +82,13 @@ export default function SearchComp() {
     localStorage.setItem("search_history", JSON.stringify(updatedHistory));
   }, [searchHistory]);
 
+  // Thực hiện search khi debouncedQuery thay đổi
+  useEffect(() => {
+    if (debouncedQuery) {
+      handleSearch(debouncedQuery);
+      saveToSearchHistory(debouncedQuery);
+    }
+  }, [debouncedQuery, handleSearch]);
   // Xóa search history
   const clearSearchHistory = useCallback(() => {
     setSearchHistory([]);
@@ -111,6 +122,47 @@ export default function SearchComp() {
     router.push(`/product/${productId}`);
   };
 
+  // Hàm kiểm tra sản phẩm phù hợp với độ tuổi
+  const checkAgeCompatibility = (product: Product, ageRange: string): boolean => {
+    if (ageRange === "all" || !product.age_range) return true;
+    
+    const productAgeRange = product.age_range.toString();
+    
+    if (ageRange === "18-25") {
+      return productAgeRange.includes("18") || 
+             productAgeRange.includes("25") || 
+             productAgeRange === "all" ||
+             productAgeRange.includes("young");
+    }
+    
+    if (ageRange === "26-40") {
+      return productAgeRange.includes("26") || 
+             productAgeRange.includes("30") || 
+             productAgeRange.includes("40") ||
+             productAgeRange === "all" ||
+             productAgeRange.includes("adult");
+    }
+    
+    if (ageRange === "41-60") {
+      return productAgeRange.includes("41") || 
+             productAgeRange.includes("50") || 
+             productAgeRange.includes("60") ||
+             productAgeRange === "all" ||
+             productAgeRange.includes("middle");
+    }
+    
+    if (ageRange === "61+") {
+      return productAgeRange.includes("61") || 
+             productAgeRange.includes("70") || 
+             productAgeRange.includes("80") ||
+             productAgeRange === "all" ||
+             productAgeRange.includes("senior") ||
+             productAgeRange.includes("elder");
+    }
+    
+    return true;
+  };
+
   // Filter và sort products
   const getFilteredProducts = useCallback(() => {
     if (!searchResults.length) return [];
@@ -121,6 +173,13 @@ export default function SearchComp() {
     if (selectedCategory !== "all") {
       filtered = filtered.filter(product => 
         product.category.toLowerCase() === selectedCategory.toLowerCase()
+      );
+    }
+
+    // Filter by age range
+    if (selectedAgeRange !== "all") {
+      filtered = filtered.filter(product => 
+        checkAgeCompatibility(product, selectedAgeRange)
       );
     }
 
@@ -138,7 +197,7 @@ export default function SearchComp() {
     });
 
     return filtered;
-  }, [searchResults, selectedCategory, sortBy]);
+  }, [searchResults, selectedCategory, selectedAgeRange, sortBy]);
 
   // Lấy unique categories từ search results
   const getResultCategories = useCallback(() => {
@@ -152,8 +211,24 @@ export default function SearchComp() {
   // Clear search
   const handleClearSearch = () => {
     setSearchQuery("");
+    setSelectedCategory("all");
+    setSelectedAgeRange("all");
     clearSearchResults();
   };
+
+  // Clear filters
+  const clearFilters = () => {
+    setSelectedCategory("all");
+    setSelectedAgeRange("all");
+    setSortBy("relevance");
+  };
+
+  // Tính số filter đang active
+  const activeFiltersCount = [
+    selectedCategory !== "all",
+    selectedAgeRange !== "all",
+    sortBy !== "relevance"
+  ].filter(Boolean).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -163,12 +238,12 @@ export default function SearchComp() {
           <div className="flex items-center justify-between gap-4">
             {/* Back Button */}
             <Button
-              variant="ghost"
-              size="icon"
+              variant="outline"
+              size="icon" 
+              className={`rounded-xl`}
               onClick={() => router.back()}
-              className="hover:bg-gray-100"
             >
-            <CircleChevronLeft size={20} />
+              <CircleChevronLeft size={20} />
             </Button>
 
             {/* Search Input */}
@@ -198,15 +273,67 @@ export default function SearchComp() {
             </form>
 
             {/* Filter Toggle */}
-            <Button
-              variant={showFilters ? "default" : "outline"}
-              size="icon"
-              onClick={() => setShowFilters(!showFilters)}
-              className={`rounded-xl ${showFilters ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-            >
-              <Filter className="w-5 h-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {activeFiltersCount > 0 && (
+                <Badge className="bg-blue-600 text-white">
+                  {activeFiltersCount}
+                </Badge>
+              )}
+              <Button
+                variant={showFilters ? "default" : "outline"}
+                size="icon"
+                onClick={() => setShowFilters(!showFilters)}
+                className={`rounded-xl ${showFilters ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+              >
+                <Filter size={20} />
+              </Button>
+            </div>
           </div>
+
+          {/* Active Filters Display */}
+          {(selectedCategory !== "all" || selectedAgeRange !== "all") && (
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-200">Bộ lọc:</span>
+                  {selectedCategory !== "all" && (
+                    <Badge className="bg-blue-600 text-white gap-1">
+                      Danh mục: {selectedCategory}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-3 w-3 p-0 hover:bg-transparent"
+                        onClick={() => setSelectedCategory("all")}
+                      >
+                        <X className="w-2 h-2" />
+                      </Button>
+                    </Badge>
+                  )}
+                  {selectedAgeRange !== "all" && (
+                    <Badge className="bg-green-600 text-white gap-1">
+                      Độ tuổi: {ageRanges.find(r => r.id === selectedAgeRange)?.label}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-3 w-3 p-0 hover:bg-transparent"
+                        onClick={() => setSelectedAgeRange("all")}
+                      >
+                        <X className="w-2 h-2" />
+                      </Button>
+                    </Badge>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="text-gray-300 hover:text-white"
+                >
+                  Xóa bộ lọc
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Filters Panel */}
           <AnimatePresence>
@@ -220,11 +347,11 @@ export default function SearchComp() {
                 <div className="mt-4 pt-4 border-t space-y-4">
                   {/* Category Filter */}
                   <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Danh mục</h4>
+                    <h4 className="font-medium text-gray-200 mb-2">Danh mục</h4>
                     <div className="flex flex-wrap gap-2">
                       <Badge
                         variant={selectedCategory === "all" ? "default" : "outline"}
-                        className={`cursor-pointer ${selectedCategory === "all" ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                        className={`cursor-pointer text-white ${selectedCategory === "all" ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
                         onClick={() => setSelectedCategory("all")}
                       >
                         Tất cả
@@ -233,10 +360,27 @@ export default function SearchComp() {
                         <Badge
                           key={category}
                           variant={selectedCategory === category ? "default" : "outline"}
-                          className={`cursor-pointer ${selectedCategory === category ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                          className={`cursor-pointer text-white ${selectedCategory === category ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
                           onClick={() => setSelectedCategory(category)}
                         >
                           {category}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div> 
+
+                  {/* Age Range Filter */}
+                  <div>
+                    <h4 className="font-medium text-gray-200 mb-2">Độ tuổi</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {ageRanges.map((range) => (
+                        <Badge
+                          key={range.id}
+                          variant={selectedAgeRange === range.id ? "default" : "outline"}
+                          className={`cursor-pointer text-white ${selectedAgeRange === range.id ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                          onClick={() => setSelectedAgeRange(range.id)}
+                        >
+                          {range.label}
                         </Badge>
                       ))}
                     </div>
@@ -244,7 +388,7 @@ export default function SearchComp() {
 
                   {/* Sort Options */}
                   <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Sắp xếp</h4>
+                    <h4 className="font-medium text-gray-200 mb-2">Sắp xếp</h4>
                     <div className="flex flex-wrap gap-2">
                       {[
                         { id: "relevance", label: "Độ liên quan", icon: TrendingUp },
@@ -256,11 +400,11 @@ export default function SearchComp() {
                           <Badge
                             key={option.id}
                             variant={sortBy === option.id ? "default" : "outline"}
-                            className={`cursor-pointer gap-1 ${sortBy === option.id ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                            className={`cursor-pointer gap-1 text-white ${sortBy === option.id ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
                             onClick={() => setSortBy(option.id as any)}
                           >
                             {Icon && <Icon className="w-3 h-3" />}
-                            {option.label}
+                            {option.label} 
                           </Badge>
                         );
                       })}
@@ -310,12 +454,31 @@ export default function SearchComp() {
             {/* Results Summary */}
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                Kết quả tìm kiếm cho - {debouncedQuery}
+                Kết quả tìm kiếm cho .{debouncedQuery}.
               </h1>
-              <p className="text-gray-600">
-                Tìm thấy <span className="font-semibold text-blue-600">{filteredProducts.length}</span> sản phẩm phù hợp
-                {selectedCategory !== "all" && ` trong danh mục "${selectedCategory}"`}
-              </p>
+              <div className="flex flex-wrap items-center gap-2 text-gray-600">
+                <span>Tìm thấy</span>
+                <span className="font-semibold text-blue-600">{filteredProducts.length}</span>
+                <span>sản phẩm phù hợp</span>
+                
+                {(selectedCategory !== "all" || selectedAgeRange !== "all") && (
+                  <>
+                    <span className="mx-1">•</span>
+                    <div className="flex items-center gap-2">
+                      {selectedCategory !== "all" && (
+                        <Badge variant="outline" className="text-blue-600 border-blue-200">
+                          {selectedCategory}
+                        </Badge>
+                      )}
+                      {selectedAgeRange !== "all" && (
+                        <Badge variant="outline" className="text-green-600 border-green-200">
+                          {ageRanges.find(r => r.id === selectedAgeRange)?.label}
+                        </Badge>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Results Grid */}
@@ -325,6 +488,7 @@ export default function SearchComp() {
                   <ProductCard
                     key={product.id}
                     product={product}
+                    ageRange={selectedAgeRange}
                     onClick={() => handleProductClick(product.id)}
                   />
                 ))}
@@ -338,13 +502,20 @@ export default function SearchComp() {
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                   Không tìm thấy sản phẩm
                 </h3>
-                <p className="text-gray-600 mb-6">
-                  Không có sản phẩm nào phù hợp với {debouncedQuery}
-                  {selectedCategory !== "all" && ` trong danh mục "${selectedCategory}"`}
+                <p className="text-gray-600 mb-4">
+                  Không có sản phẩm nào phù hợp với .{debouncedQuery}.
+                  {(selectedCategory !== "all" || selectedAgeRange !== "all") && (
+                    <span> trong bộ lọc hiện tại</span>
+                  )}
                 </p>
-                <Button variant="outline" onClick={handleClearSearch}>
-                  Xóa tìm kiếm
-                </Button>
+                <div className="flex gap-3 justify-center">
+                  <Button variant="outline" onClick={clearFilters}>
+                    Xóa bộ lọc
+                  </Button>
+                  <Button onClick={handleClearSearch}>
+                    Tìm kiếm mới
+                  </Button>
+                </div>
               </div>
             )}
           </>
@@ -363,7 +534,7 @@ export default function SearchComp() {
                     variant="ghost"
                     size="sm"
                     onClick={clearSearchHistory}
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-gray-500 hover:text-gray-200"
                   >
                     Xóa tất cả
                   </Button>
@@ -426,7 +597,7 @@ export default function SearchComp() {
             {categories.length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  🏷️ Danh mục nổi bật
+                   Danh mục nổi bật
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {categories.slice(0, 8).map((category) => (
@@ -487,10 +658,25 @@ export default function SearchComp() {
 // Product Card Component
 interface ProductCardProps {
   product: Product;
+  ageRange: string;
   onClick: () => void;
 }
 
-function ProductCard({ product, onClick }: ProductCardProps) {
+function ProductCard({ product,  onClick }: ProductCardProps) {
+  // Hiển thị thông tin độ tuổi nếu có
+  const renderAgeInfo = () => {
+    if (!product.age_range) return null;
+    
+    const ageInfo = product.age_range.toString();
+    if (!ageInfo || ageInfo === "all") return null;
+    
+    return (
+      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+        {ageInfo}
+      </Badge>
+    );
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -519,9 +705,10 @@ function ProductCard({ product, onClick }: ProductCardProps) {
             <div className="absolute top-4 right-4">
               <Badge className="bg-blue-600 hover:bg-blue-700">
                 <Star className="w-3 h-3 mr-1" />
-                {product.match_score}% phù hợp
+                {(product.match_score * 100).toFixed(0)}% phù hợp
               </Badge>
-            </div>)}
+            </div>
+          )}
         </div>
 
         <CardContent className="p-4">
@@ -532,14 +719,15 @@ function ProductCard({ product, onClick }: ProductCardProps) {
           </div>
 
           <div className="space-y-3">
-            {/* Category */}
-            <div className="flex items-center gap-2">
+            {/* Category and Age Info */}
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className="text-xs">
                 {product.category}
               </Badge>
+              {renderAgeInfo()}
               {product.target_gender && product.target_gender !== "All" && (
-                <Badge variant="outline" className="text-xs">
-                  {product.target_gender}
+                <Badge variant="outline" className={`text-xs  ${product.target_gender === "Male" ? "bg-blue-50 border-blue-700 text-blue-700" : "bg-fuchsia-50 border-fuchsia-700 text-fuchsia-700"}`}>
+                  {product.target_gender === "Male" ? "Nam" : "Nữ"}
                 </Badge>
               )}
             </div>
@@ -552,8 +740,7 @@ function ProductCard({ product, onClick }: ProductCardProps) {
             {/* Health Goals */}
             {product.health_goal && (
               <div>
-
-                <p className="text-xs font-medium text-gray-700 mb-1">Mục tiêu:</p>
+                <p className="text-xs font-medium text-gray-500 mb-1">Mục tiêu sức khỏe:</p>
                 <p className="text-sm text-blue-600 font-medium">
                   {product.health_goal}
                 </p>
@@ -568,9 +755,7 @@ function ProductCard({ product, onClick }: ProductCardProps) {
             className="w-full group-hover:bg-blue-600 group-hover:text-white"
           >
             Xem chi tiết
-            <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+          <ChevronRight size={20} />
           </Button>
         </CardFooter>
       </Card>

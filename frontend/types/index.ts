@@ -1,4 +1,4 @@
-// ==================== USER TYPES ====================
+// USER TYPES
 export interface UserProfile {
   age?: number;
   weight?: number;
@@ -26,7 +26,7 @@ export interface ProfileResponse {
   message?: string;
 }
 
-// ==================== PRODUCT TYPES ====================
+// PRODUCT TYPES 
 export interface Product {
   id: number;
   name: string;
@@ -34,11 +34,15 @@ export interface Product {
   description: string;
   target_gender: string;
   health_goal: string;
+  age_range?: string;
+  weight_range?: string;
   features?: string;
   search_keywords?: string;
   match_score?: number;
   relevance?: number;
-  [key: string]: any; // For additional fields
+  has_age_range?: boolean;
+  has_weight_range?: boolean;
+  [key: string]: any;
 }
 
 export interface ProductDetail extends Product {
@@ -68,7 +72,7 @@ export interface TrackViewParams {
   product_id: number;
 }
 
-// ==================== RESPONSE TYPES ====================
+// RESPONSE TYPES
 export interface SearchResponse {
   status: "success" | "error";
   query: string;
@@ -125,7 +129,7 @@ export interface CategoriesResponse {
   message?: string;
 }
 
-// ==================== STORE TYPES ====================
+// STORE TYPES
 export interface AuthState {
   user: User | null;
   isLoggedIn: boolean;

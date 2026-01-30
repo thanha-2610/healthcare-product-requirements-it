@@ -6,6 +6,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime
 import numpy as np
 from collections import defaultdict
+import json
+import os
 
 app = Flask(__name__)
 
@@ -33,24 +35,40 @@ USER_SEARCH_HISTORY = defaultdict(list)
 def load_healthcare_data():
     """Load và xử lý dữ liệu sản phẩm"""
     try:
-        df = pd.read_csv('healthcare_data.csv')
-        print(f"✅ Loaded {len(df)} products")
+        df = pd.read_csv('healthcare_data.csv', encoding='utf-8-sig')
+        print(f"Loaded {len(df)} products")
         
         # Chuẩn hóa dữ liệu
         df = df.fillna('')
         
-        # Tạo features cho ML
+        # Đảm bảo các trường mới tồn tại
+        if 'age_range' not in df.columns:
+            df['age_range'] = '18-65'
+        if 'weight_range' not in df.columns:
+            df['weight_range'] = '45-90'
+        
+        # Tạo features cho ML với các trường mới
         df['features'] = (
             df['name'].str.lower() + " " + 
             df['category'].str.lower() + " " + 
             df['description'].str.lower() + " " + 
             df['target_gender'].str.lower() + " " + 
-            df['health_goal'].str.lower()
+            df['health_goal'].str.lower() + " " +
+            df['age_range'].astype(str) + " " +
+            df['weight_range'].astype(str)
         )
         
+        print(f"📊 Data sample:")
+        print(f"  - Categories: {df['category'].unique()[:10]}")
+        print(f"  - Target genders: {df['target_gender'].unique()}")
+        print(f"  - Age ranges: {df['age_range'].unique()[:5]}")
+        
         return df
+        
     except Exception as e:
-        print(f"❌ Error loading data: {e}")
+        print(f"Error loading data: {e}")
+        import traceback
+        traceback.print_exc()
         return pd.DataFrame()
 
 # Load data khi server start
@@ -59,154 +77,245 @@ PRODUCTS_DF = load_healthcare_data()
 # ==================== ML MODEL ====================
 class ProductRecommender:
     def __init__(self, products_df):
+        """Khởi tạo với dữ liệu sản phẩm"""
         self.df = products_df
-        # BỎ stop_words hoặc chỉ dùng stop_words='english' cho từ tiếng Anh
-        self.tfidf = TfidfVectorizer(stop_words='english', max_features=1000)
+        self.vectorizer = TfidfVectorizer(stop_words='english')
         self.feature_matrix = None
-        self._train_model()
+        self._fit_model()
     
-    def _train_model(self):
-        """Train TF-IDF model"""
+    def _fit_model(self):
+        """Huấn luyện model TF-IDF"""
         if len(self.df) > 0:
-            try:
-                self.feature_matrix = self.tfidf.fit_transform(self.df['features'])
-                print(f"✅ ML Model trained with {self.feature_matrix.shape[1]} features")
-            except Exception as e:
-                print(f"❌ Error training model: {e}")
-                # Fallback: không dùng TF-IDF
-                self.feature_matrix = None
+            self.feature_matrix = self.vectorizer.fit_transform(self.df['features'])
+            print(f"TF-IDF model trained with {self.feature_matrix.shape[1]} features")
         else:
             print("⚠️ No data to train model")
     
     def search_products(self, query, limit=20):
-        """Tìm kiếm sản phẩm - SIMPLE VERSION"""
-        if len(self.df) == 0:
+        """Tìm kiếm sản phẩm bằng TF-IDF"""
+        if len(self.df) == 0 or self.feature_matrix is None:
+            print("No data or model not trained")
             return []
         
-        query_lower = query.lower()
-        
-        # Đơn giản: tìm kiếm trực tiếp
-        results = []
-        for idx, row in self.df.iterrows():
-            score = 0
+        try:
+            print(f"🔍 Searching for: '{query}' (limit: {limit})")
             
-            # Kiểm tra trong các trường
-            fields_to_check = ['name', 'category', 'description', 'health_goal', 'features']
+            # Vectorize query
+            query_vector = self.vectorizer.transform([query.lower()])
             
-            for field in fields_to_check:
-                if query_lower in str(row[field]).lower():
-                    # Cho điểm khác nhau cho từng trường
-                    if field == 'name':
-                        score += 5
-                    elif field == 'category':
-                        score += 3
-                    else:
-                        score += 1
+            # Tính similarity
+            similarities = cosine_similarity(query_vector, self.feature_matrix).flatten()
             
-            # Kiểm tra từng từ trong query
-            words = query_lower.split()
-            for word in words:
-                if len(word) > 2:
-                    for field in fields_to_check:
-                        if word in str(row[field]).lower():
-                            score += 0.5
+            # Lấy top k results
+            top_indices = similarities.argsort()[-limit:][::-1]
             
-            if score > 0:
-                product = row.to_dict()
-                product['relevance'] = score
-                product['match_score'] = min(score * 10, 100) if score < 10 else 100
-                results.append(product)
-        
-        # Sắp xếp theo score
-        results.sort(key=lambda x: x['relevance'], reverse=True)
-        return results[:limit]
+            results = []
+            for idx in top_indices:
+                if similarities[idx] > 0.01:  # Chỉ lấy kết quả có similarity > 0.01
+                    product = self.df.iloc[idx].to_dict()
+                    
+                    # Đảm bảo có id
+                    if 'id' not in product:
+                        product['id'] = int(idx) + 1
+                    
+                    # Thêm scores
+                    product['relevance'] = float(similarities[idx])
+                    product['match_score'] = float(similarities[idx])
+                    
+                    # Format đúng type
+                    product['id'] = int(product['id'])
+                    
+                    results.append(product)
+            
+            print(f"Found {len(results)} results with similarity > 0.01")
+            return results
+            
+        except Exception as e:
+            print(f"Search products error: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
     
-    def get_personalized_recommendations(self, user_profile, view_history=[], search_history=[], limit=10):
-        """Gợi ý cá nhân hóa - SIMPLE VERSION"""
+    def recommend(self, user_input, limit=20):
+        """Gợi ý sản phẩm dựa trên user input"""
         if len(self.df) == 0:
             return []
         
-        # Tạo query từ profile
-        queries = []
-        
-        if user_profile:
-            health_concerns = user_profile.get('health_concerns', '')
-            diseases = user_profile.get('diseases', '')
-            if health_concerns:
-                queries.append(health_concerns)
-            if diseases:
-                queries.append(diseases)
-        
-        # Thêm search history
-        queries.extend(search_history[-3:])
-        
-        # Nếu không có query, trả về random products
-        if not queries:
+        try:
+            # Tạo query từ user input
+            query_parts = []
+            
+            # Thêm health goals
+            if 'health_goals' in user_input:
+                query_parts.extend(user_input['health_goals'])
+            
+            # Thêm symptoms
+            if 'symptoms' in user_input:
+                query_parts.extend(user_input['symptoms'])
+            
+            # Tạo query string
+            query = ' '.join(query_parts)
+            
+            # Nếu không có query, trả về popular products
+            if not query.strip():
+                print("ℹ️ No query, returning popular products")
+                return self.get_popular_products(limit)
+            
+            # Tìm kiếm bằng TF-IDF
+            results = self.search_products(query, limit)
+            
+            # Filter by demographics nếu cần
+            gender = user_input.get('gender', 'All').lower()
+            if gender != 'all':
+                filtered_results = []
+                for product in results:
+                    product_gender = str(product.get('target_gender', 'All')).lower()
+                    if product_gender == 'all' or product_gender == gender:
+                        filtered_results.append(product)
+                results = filtered_results[:limit]
+            
+            return results
+            
+        except Exception as e:
+            print(f"Recommend error: {e}")
             return self.get_popular_products(limit)
-        
-        # Tìm kiếm với tất cả queries
-        all_results = []
-        seen_ids = set()
-        
-        for query in queries:
-            results = self.search_products(query, limit * 2)
-            for product in results:
-                if product['id'] not in seen_ids and product['id'] not in view_history:
-                    all_results.append(product)
-                    seen_ids.add(product['id'])
-        
-        # Sắp xếp và giới hạn
-        all_results.sort(key=lambda x: x['relevance'], reverse=True)
-        return all_results[:limit]
-    
-    def get_popular_products(self, limit=10):
-        """Lấy sản phẩm phổ biến"""
-        if len(self.df) == 0:
-            return []
-        
-        # Trong thực tế sẽ dựa trên lượt xem/đánh giá
-        # Tạm thời lấy ngẫu nhiên nhưng ưu tiên có health_goal
-        df_with_goal = self.df[self.df['health_goal'].str.len() > 0]
-        if len(df_with_goal) >= limit:
-            return df_with_goal.sample(limit).to_dict('records')
-        else:
-            return self.df.sample(min(limit, len(self.df))).to_dict('records')
     
     def get_product_by_id(self, product_id):
         """Lấy chi tiết sản phẩm"""
         if len(self.df) == 0:
             return None
         
-        product = self.df[self.df['id'] == product_id]
-        if not product.empty:
-            return product.iloc[0].to_dict()
-        return None
+        try:
+            # Chuyển đổi product_id sang int nếu cần
+            if isinstance(product_id, str):
+                product_id = int(product_id)
+            
+            # Tìm sản phẩm
+            product_row = self.df[self.df['id'] == product_id]
+            
+            if not product_row.empty:
+                product = product_row.iloc[0].to_dict()
+                
+                # Đảm bảo id là int
+                product['id'] = int(product['id'])
+                
+                # Thêm thông tin bổ sung
+                product['has_age_range'] = 'age_range' in product and product['age_range'] != ''
+                product['has_weight_range'] = 'weight_range' in product and product['weight_range'] != ''
+                
+                return product
+            
+            print(f"Product ID {product_id} not found")
+            return None
+            
+        except Exception as e:
+            print(f"Error getting product by id: {e}")
+            return None
     
-    def get_categories(self, top_n=4):
-        """Lấy danh mục nổi bật"""
+    def get_categories(self, limit=None):
+        """Lấy danh sách categories"""
         if len(self.df) == 0:
             return []
         
-        # Đếm số sản phẩm theo category
-        category_counts = self.df['category'].value_counts()
-        top_categories = category_counts.head(top_n).index.tolist()
+        categories = self.df['category'].unique().tolist()
+        if limit:
+            return categories[:limit]
+        return categories
+    
+    def get_popular_products(self, limit=10):
+        """Lấy sản phẩm phổ biến (mẫu)"""
+        if len(self.df) == 0:
+            return []
         
-        # Lấy sản phẩm tiêu biểu cho mỗi category
-        result = []
-        for category in top_categories:
-            category_products = self.df[self.df['category'] == category]
-            if len(category_products) > 0:
-                representative = category_products.iloc[0].to_dict()
-                result.append({
-                    'category': category,
-                    'count': int(category_counts[category]),
-                    'featured_product': representative
-                })
+        try:
+            # Lấy ngẫu nhiên limit sản phẩm
+            sample_size = min(limit, len(self.df))
+            sample_df = self.df.sample(sample_size)
+            products = sample_df.to_dict('records')
+            
+            # Thêm relevance và match_score
+            for product in products:
+                product['relevance'] = 0.8
+                product['match_score'] = 0.7
+                product['id'] = int(product['id'])
+            
+            return products
+            
+        except Exception as e:
+            print(f"Error getting popular products: {e}")
+            return []
+    
+    def get_personalized_recommendations(self, user_profile, view_history, search_history, limit=10):
+        """Gợi ý cá nhân hóa"""
+        if len(self.df) == 0:
+            return []
         
-        return result
+        try:
+            # Tạo query từ search history
+            query = ' '.join(search_history[-3:]) if search_history else ''
+            
+            if not query and user_profile:
+                # Sử dụng health concerns từ profile
+                query = user_profile.get('health_concerns', '') or user_profile.get('diseases', '')
+            
+            if query:
+                # Tìm kiếm dựa trên query
+                results = self.search_products(query, limit * 2)
+            else:
+                # Nếu không có query, lấy popular products
+                results = self.get_popular_products(limit * 2)
+            
+            # Filter out viewed products
+            if view_history:
+                results = [p for p in results if p['id'] not in view_history]
+            
+            # Limit results
+            return results[:limit]
+            
+        except Exception as e:
+            print(f"Error getting personalized recommendations: {e}")
+            return self.get_popular_products(limit)
 
 # Khởi tạo recommender
-recommender = ProductRecommender(PRODUCTS_DF)
+if not PRODUCTS_DF.empty:
+    recommender = ProductRecommender(PRODUCTS_DF)
+    print("Recommender initialized successfully")
+else:
+    recommender = None
+    print("⚠️ Recommender not initialized due to empty data")
+
+# ==================== HELPER FUNCTIONS ====================
+def save_search_history(history):
+    """Lưu lịch sử tìm kiếm"""
+    try:
+        # Tạo thư mục nếu chưa tồn tại
+        os.makedirs('data', exist_ok=True)
+        
+        # Lưu vào file JSON
+        history_file = 'data/search_history.json'
+        
+        # Đọc lịch sử hiện có
+        if os.path.exists(history_file):
+            with open(history_file, 'r', encoding='utf-8') as f:
+                histories = json.load(f)
+        else:
+            histories = []
+        
+        # Thêm lịch sử mới
+        histories.append(history)
+        
+        # Giới hạn số lượng bản ghi
+        if len(histories) > 1000:
+            histories = histories[-1000:]
+        
+        # Lưu file
+        with open(history_file, 'w', encoding='utf-8') as f:
+            json.dump(histories, f, ensure_ascii=False, indent=2)
+            
+        print(f"Saved search history for {history['email']}")
+        
+    except Exception as e:
+        print(f"⚠️ Error saving search history: {e}")
 
 # ==================== AUTH APIs ====================
 @app.route('/auth/signup', methods=['POST', 'OPTIONS'])
@@ -242,6 +351,7 @@ def signup():
         })
         
     except Exception as e:
+        print(f"Signup error: {e}")
         return jsonify({"message": f"Lỗi: {str(e)}"}), 500
 
 @app.route('/auth/login', methods=['POST', 'OPTIONS'])
@@ -290,7 +400,7 @@ def login():
         user = USERS.get(email)
         
         if user and user['password'] == password:
-            print(f"✅ Login success for: {email}")
+            print(f"Login success for: {email}")
             return jsonify({
                 "status": "success",
                 "user": {
@@ -300,14 +410,15 @@ def login():
                 }
             })
         
-        print(f"❌ Login failed for: {email}")
+        print(f"Login failed for: {email}")
         return jsonify({"message": "Sai email hoặc mật khẩu"}), 401
         
     except Exception as e:
-        print(f"❌ Login error: {e}")
+        print(f"Login error: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"message": f"Lỗi server: {str(e)}"}), 500
+
 @app.route('/user/profile', methods=['POST', 'OPTIONS'])
 def save_profile():
     if request.method == 'OPTIONS':
@@ -343,47 +454,91 @@ def save_profile():
         })
         
     except Exception as e:
+        print(f"Save profile error: {e}")
         return jsonify({"message": f"Lỗi: {str(e)}"}), 500
 
 # ==================== PRODUCT APIs ====================
 @app.route('/api/products/search', methods=['POST', 'OPTIONS'])
 def search_products():
-    """Tìm kiếm sản phẩm"""
+    """API tìm kiếm sản phẩm"""
     if request.method == 'OPTIONS':
         return '', 200
     
     try:
-        data = request.json
+        data = request.get_json()
         query = data.get('query', '').strip()
         email = data.get('email', '').strip().lower()
         limit = data.get('limit', 20)
         
         if not query:
-            return jsonify({"message": "Vui lòng nhập từ khóa tìm kiếm"}), 400
+            return jsonify({
+                'success': False,
+                'message': 'Vui lòng nhập từ khóa tìm kiếm'
+            }), 400
         
-        print(f"🔍 Searching for: '{query}'")
+        print(f"🔍 Search request: query='{query}', email='{email}', limit={limit}")
+        
+        # Kiểm tra recommender
+        if recommender is None:
+            print("Recommender is None")
+            return jsonify({
+                'success': False,
+                'error': 'Recommender not initialized'
+            }), 500
+        
+        if PRODUCTS_DF.empty:
+            print("PRODUCTS_DF is empty")
+            return jsonify({
+                'success': False,
+                'error': 'No products data available'
+            }), 500
         
         # Lưu lịch sử tìm kiếm
+        search_history_data = None
         if email:
+            # Update in-memory history
             USER_SEARCH_HISTORY[email].append(query)
-            # Giữ tối đa 20 search gần nhất
             USER_SEARCH_HISTORY[email] = USER_SEARCH_HISTORY[email][-20:]
+            
+            # Prepare for file saving
+            search_history_data = {
+                'email': email,
+                'query': query,
+                'timestamp': datetime.now().isoformat(),
+                'results_count': 0
+            }
         
-        # Tìm kiếm
+        # Tìm kiếm sản phẩm
+        print(f"🔍 Executing search for: '{query}'")
         results = recommender.search_products(query, limit)
         
-        print(f"✅ Found {len(results)} products")
+        # Cập nhật results count trong history
+        if search_history_data:
+            search_history_data['results_count'] = len(results)
+            try:
+                save_search_history(search_history_data)
+            except Exception as e:
+                print(f"⚠️ Could not save search history: {e}")
+        
+        print(f"Search completed. Found {len(results)} products")
         
         return jsonify({
-            "status": "success",
-            "query": query,
-            "count": len(results),
-            "products": results
+            'success': True,
+            'status': 'success',
+            'query': query,
+            'count': len(results),
+            'products': results
         })
-        
+            
     except Exception as e:
-        print(f"❌ Search error: {e}")
-        return jsonify({"message": f"Lỗi tìm kiếm: {str(e)}"}), 500
+        print(f"Search error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'status': 'error',
+            'message': f'Lỗi tìm kiếm: {str(e)}'
+        }), 500
 
 @app.route('/api/products/personalized', methods=['POST', 'OPTIONS'])
 def get_personalized_recommendations():
@@ -419,7 +574,7 @@ def get_personalized_recommendations():
             user_profile, view_history, search_history, limit
         )
         
-        print(f"✅ Generated {len(recommendations)} recommendations")
+        print(f"Generated {len(recommendations)} recommendations")
         
         return jsonify({
             "status": "success",
@@ -433,7 +588,7 @@ def get_personalized_recommendations():
         })
         
     except Exception as e:
-        print(f"❌ Personalized error: {e}")
+        print(f"Personalized error: {e}")
         return jsonify({"message": f"Lỗi gợi ý: {str(e)}"}), 500
 
 @app.route('/api/products/landing', methods=['GET', 'OPTIONS'])
@@ -443,18 +598,18 @@ def get_landing_page_data():
         return '', 200
     
     try:
-        print("🏠 Getting landing page data")
+        print(" Getting landing page data")
         
         # 1. Danh mục nổi bật
-        categories = recommender.get_categories(4)
+        categories = recommender.get_categories(4) if recommender else []
         
         # 2. Sản phẩm phổ biến
-        popular_products = recommender.get_popular_products(8)
+        popular_products = recommender.get_popular_products(8) if recommender else []
         
         # 3. Danh sách sản phẩm gợi ý chung
-        general_recommendations = recommender.get_popular_products(6)
+        general_recommendations = recommender.get_popular_products(6) if recommender else []
         
-        print(f"✅ Landing page data: {len(categories)} categories, {len(popular_products)} popular products")
+        print(f"Landing page data: {len(categories)} categories, {len(popular_products)} popular products")
         
         return jsonify({
             "status": "success",
@@ -465,30 +620,47 @@ def get_landing_page_data():
         })
         
     except Exception as e:
-        print(f"❌ Landing page error: {e}")
+        print(f"Landing page error: {e}")
         return jsonify({"message": f"Lỗi: {str(e)}"}), 500
 
 @app.route('/api/products/<int:product_id>', methods=['GET', 'OPTIONS'])
 def get_product_detail(product_id):
     """Lấy chi tiết sản phẩm"""
     if request.method == 'OPTIONS':
+        print(f"OPTIONS request for product {product_id}")
         return '', 200
     
     try:
-        print(f"📦 Getting product detail for ID: {product_id}")
+        print(f"Getting product detail for ID: {product_id}")
+        
+        if recommender is None:
+            return jsonify({
+                "status": "error",
+                "message": "Recommender not initialized"
+            }), 500
+        
         product = recommender.get_product_by_id(product_id)
         
         if not product:
-            return jsonify({"message": "Sản phẩm không tồn tại"}), 404
+            return jsonify({
+                "status": "error",
+                "message": f"Sản phẩm ID {product_id} không tồn tại"
+            }), 404
         
+        print(f"Found product: {product.get('name', 'Unknown')}")
         return jsonify({
             "status": "success",
             "product": product
         })
         
     except Exception as e:
-        print(f"❌ Product detail error: {e}")
-        return jsonify({"message": f"Lỗi: {str(e)}"}), 500
+        print(f"Product detail error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "status": "error",
+            "message": f"Lỗi server: {str(e)}"
+        }), 500
 
 @app.route('/api/products/view', methods=['POST', 'OPTIONS'])
 def track_product_view():
@@ -512,7 +684,6 @@ def track_product_view():
         # Thêm vào lịch sử xem (không trùng)
         if product_id not in USER_VIEW_HISTORY[email]:
             USER_VIEW_HISTORY[email].append(product_id)
-            # Giữ tối đa 50 sản phẩm gần nhất
             USER_VIEW_HISTORY[email] = USER_VIEW_HISTORY[email][-50:]
         
         print(f"   View history for {email}: {len(USER_VIEW_HISTORY[email])} products")
@@ -524,7 +695,7 @@ def track_product_view():
         })
         
     except Exception as e:
-        print(f"❌ Track view error: {e}")
+        print(f"Track view error: {e}")
         return jsonify({"message": f"Lỗi: {str(e)}"}), 500
 
 @app.route('/api/products/view-history', methods=['POST', 'OPTIONS'])
@@ -540,18 +711,18 @@ def get_view_history():
         if not email:
             return jsonify({"message": "Vui lòng đăng nhập"}), 401
         
-        print(f"📚 Getting view history for: {email}")
+        print(f"Getting view history for: {email}")
         
         view_history_ids = USER_VIEW_HISTORY.get(email, [])
         
         # Lấy thông tin sản phẩm
         viewed_products = []
-        for product_id in view_history_ids[::-1]:  # Đảo ngược để lấy mới nhất trước
-            product = recommender.get_product_by_id(product_id)
+        for product_id in view_history_ids[::-1]:
+            product = recommender.get_product_by_id(product_id) if recommender else None
             if product:
                 viewed_products.append(product)
         
-        print(f"✅ Found {len(viewed_products)} viewed products")
+        print(f"Found {len(viewed_products)} viewed products")
         
         return jsonify({
             "status": "success",
@@ -560,7 +731,7 @@ def get_view_history():
         })
         
     except Exception as e:
-        print(f"❌ View history error: {e}")
+        print(f"View history error: {e}")
         return jsonify({"message": f"Lỗi: {str(e)}"}), 500
 
 @app.route('/api/products/similar/<int:product_id>', methods=['GET', 'OPTIONS'])
@@ -570,7 +741,14 @@ def get_similar_products(product_id):
         return '', 200
     
     try:
-        print(f"🔄 Getting similar products for: {product_id}")
+        print(f"Getting similar products for: {product_id}")
+        
+        if recommender is None:
+            return jsonify({
+                "status": "error",
+                "message": "Recommender not initialized"
+            }), 500
+        
         product = recommender.get_product_by_id(product_id)
         if not product:
             return jsonify({"message": "Sản phẩm không tồn tại"}), 404
@@ -578,14 +756,12 @@ def get_similar_products(product_id):
         # Sử dụng category để tìm sản phẩm tương tự
         category = product.get('category', '')
         if category:
-            # Lấy sản phẩm cùng category
             same_category = recommender.df[recommender.df['category'] == category]
-            # Loại bỏ sản phẩm hiện tại
             same_category = same_category[same_category['id'] != product_id]
             
             similar = same_category.sample(min(5, len(same_category))).to_dict('records')
             
-            print(f"✅ Found {len(similar)} similar products")
+            print(f"Found {len(similar)} similar products")
             
             return jsonify({
                 "status": "success",
@@ -600,7 +776,7 @@ def get_similar_products(product_id):
             })
         
     except Exception as e:
-        print(f"❌ Similar products error: {e}")
+        print(f"Similar products error: {e}")
         return jsonify({"message": f"Lỗi: {str(e)}"}), 500
 
 @app.route('/api/products/categories', methods=['GET', 'OPTIONS'])
@@ -621,6 +797,7 @@ def get_all_categories():
         })
         
     except Exception as e:
+        print(f"Categories error: {e}")
         return jsonify({"message": f"Lỗi: {str(e)}"}), 500
 
 # ==================== HEALTH CHECK ====================
@@ -633,7 +810,8 @@ def health_check():
         "data": {
             "products_loaded": len(PRODUCTS_DF) if PRODUCTS_DF is not None else 0,
             "users_count": len(USERS),
-            "categories_count": len(PRODUCTS_DF['category'].unique()) if PRODUCTS_DF is not None else 0
+            "categories_count": len(PRODUCTS_DF['category'].unique()) if PRODUCTS_DF is not None else 0,
+            "recommender_initialized": recommender is not None
         }
     })
 
@@ -647,22 +825,46 @@ def debug_users():
         "search_history_counts": {email: len(searches) for email, searches in USER_SEARCH_HISTORY.items()}
     })
 
+@app.route('/debug/data', methods=['GET'])
+def debug_data():
+    """Debug endpoint để kiểm tra dữ liệu"""
+    if PRODUCTS_DF is None:
+        return jsonify({"message": "PRODUCTS_DF is None"})
+    
+    # Lấy thông tin chi tiết
+    info = {
+        "total_rows": len(PRODUCTS_DF),
+        "columns": PRODUCTS_DF.columns.tolist(),
+        "id_column_info": {
+            "dtype": str(PRODUCTS_DF['id'].dtype),
+            "min": int(PRODUCTS_DF['id'].min()) if len(PRODUCTS_DF) > 0 else None,
+            "max": int(PRODUCTS_DF['id'].max()) if len(PRODUCTS_DF) > 0 else None,
+            "unique_count": PRODUCTS_DF['id'].nunique(),
+            "sample_values": PRODUCTS_DF['id'].head(20).tolist()
+        },
+        "has_id_1": 1 in PRODUCTS_DF['id'].values,
+        "row_with_id_1": PRODUCTS_DF[PRODUCTS_DF['id'] == 1].to_dict('records') if len(PRODUCTS_DF[PRODUCTS_DF['id'] == 1]) > 0 else [],
+        "recommender_status": "initialized" if recommender else "not initialized"
+    }
+    
+    return jsonify(info)
+
 # ==================== MAIN ====================
 if __name__ == '__main__':
     print("=" * 60)
-    print("🚀 Healthcare Product Recommendation API")
+    print("Healthcare Product Recommendation API")
     print("=" * 60)
-    print(f"📦 Products loaded: {len(PRODUCTS_DF)}")
+    print(f"Products loaded: {len(PRODUCTS_DF)}")
     
     if len(PRODUCTS_DF) > 0:
-        print(f"🏷️  Categories: {len(PRODUCTS_DF['category'].unique())}")
-        print(f"📝 Sample products:")
+        print(f" Categories: {len(PRODUCTS_DF['category'].unique())}")
+        print(f"Sample products:")
         for i in range(min(3, len(PRODUCTS_DF))):
             print(f"   {i+1}. {PRODUCTS_DF.iloc[i]['name']} ({PRODUCTS_DF.iloc[i]['category']})")
     
-    print(f"🌐 Server running on: http://localhost:5000")
+    print(f"Server running on: http://localhost:5000")
     print("=" * 60)
-    print("\n📋 Available APIs:")
+    print("\n Available APIs:")
     print("  AUTH:")
     print("    POST /auth/signup")
     print("    POST /auth/login")
@@ -679,5 +881,6 @@ if __name__ == '__main__':
     print("\n  UTILITY:")
     print("    GET  /health")
     print("    GET  /debug/users")
+    print("    GET  /debug/data")
     
     app.run(host='0.0.0.0', port=5000, debug=True)

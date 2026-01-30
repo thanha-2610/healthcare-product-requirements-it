@@ -93,20 +93,20 @@ export const useProductStore = create<ProductState>((set, get) => ({
       });
     }
   },
-
+ 
   getProductDetail: async (id: number) => {
     set({ isLoading: true, error: null });
     try {
       const { user } = useAuthStore.getState();
       
-      // Lấy chi tiết sản phẩm
+      // 1. Lấy chi tiết sản phẩm
       const detailResponse = await productApi.getProductDetail(id);
       
-      if (detailResponse.status === 'success') {
-        // Lấy sản phẩm tương tự
+      if (detailResponse.status === "success") {
+        // 2. Lấy sản phẩm tương tự
         const similarResponse = await productApi.getSimilarProducts(id);
         
-        // Lưu lịch sử xem
+        // 3. Lưu lịch sử xem
         if (user?.email) {
           await productApi.trackView({
             email: user.email,
@@ -120,17 +120,17 @@ export const useProductStore = create<ProductState>((set, get) => ({
         set({ 
           currentProduct: {
             ...detailResponse.product,
-            similar_products: similarResponse.status === 'success' 
+            similar_products: similarResponse.status === "success" 
               ? similarResponse.similar_products 
               : []
           },
           isLoading: false 
         });
       } else {
-        throw new Error(detailResponse.message || 'Lấy chi tiết thất bại');
+        throw new Error(detailResponse.message || "Lấy chi tiết thất bại");
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Lỗi lấy chi tiết';
+      const errorMessage = error.response?.data?.message || error.message || "Lỗi lấy chi tiết";
       set({ 
         error: errorMessage,
         isLoading: false 

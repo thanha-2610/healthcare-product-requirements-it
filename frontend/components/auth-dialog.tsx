@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,14 +13,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "../lib/axios";
 import { useAuthStore } from "../store/authStore";
+import { useToast } from "./ui/toast";
 
 export default function AuthDialog() {
   const [step, setStep] = useState<"login" | "signup" | "survey">("login");
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [forceSurvey, setForceSurvey] = useState(false);
-  
-  // Thêm watcher để debug
+  const [hasCheckedProfile, setHasCheckedProfile] = useState(false); // Thêm state để track
+  const toast = useToast();
+
+  // Refs để tránh vòng lặp
+  const hasOpenedSurveyRef = useRef(false);
+  const isSubmittingRef = useRef(false);
+
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
       email: "",
@@ -33,52 +39,60 @@ export default function AuthDialog() {
     }
   });
 
-  // Debug: log form values khi thay đổi
-  useEffect(() => {
-    const subscription = watch((value) => {
-      console.log("👀 Form values changed:", value);
-    });
-    return () => subscription.unsubscribe();
-  }, [watch]);
-
   const { login, isLoggedIn, user, logout, updateProfile } = useAuthStore();
 
-  // KIỂM TRA KHI USER LOGIN
+  // KIỂM TRA PROFILE CHỈ MỘT LẦN KHI MOUNT
   useEffect(() => {
-    console.log("🔍 AuthDialog Effect - isLoggedIn:", isLoggedIn, "user:", user);
+    console.log("🔍 Initial profile check - isLoggedIn:", isLoggedIn, "user:", user);
     
-    if (isLoggedIn && user && user.profile === null) {
-      console.log("🚨 User đã login nhưng chưa có profile -> mở khảo sát");
+    // Chỉ check một lần và không bị vòng lặp
+    if (!hasCheckedProfile && isLoggedIn && user) {
+      console.log(" Checking user profile...");
+      setHasCheckedProfile(true);
       
-      if (user.email) {
-        setValue("email", user.email);
+      // Kiểm tra cả localStorage xem đã có profile chưa
+      const savedProfile = localStorage.getItem("user_profile");
+      console.log("💾 Saved profile from localStorage:", savedProfile);
+      
+      if (user.profile === null && !savedProfile) {
+        console.log("🚨 User chưa có profile -> mở khảo sát");
+        
+        if (user.email) {
+          setValue("email", user.email);
+        }
+        
+        setForceSurvey(true);
+        setStep("survey");
+        
+        // Chỉ mở dialog nếu chưa mở trước đó
+        if (!hasOpenedSurveyRef.current) {
+          setOpen(true);
+          hasOpenedSurveyRef.current = true;
+        }
+      } else if (user.profile === null && savedProfile) {
+        console.log("User có profile trong localStorage nhưng chưa trong store");
+        try {
+          const profileData = JSON.parse(savedProfile);
+          updateProfile(profileData);
+        } catch (e) {
+          console.error("Error parsing saved profile:", e);
+        }
       }
-      
-      setForceSurvey(true);
-      setStep("survey");
-      setOpen(true);
     }
-  }, [isLoggedIn, user, setValue]);
+  }, [isLoggedIn, user, setValue, updateProfile, hasCheckedProfile]);
 
   const onSubmit = async (formData: any) => {
-    console.log("📝 Raw form data from onSubmit:", formData);
-    console.log("🔍 Step:", step);
-    console.log("🔍 isLoggedIn:", isLoggedIn);
-    console.log("🔍 Current user:", user);
+    // Tránh submit nhiều lần
+    if (isSubmittingRef.current) return;
     
+    isSubmittingRef.current = true;
     setIsLoading(true);
     
     try {
       if (step === "login") {
-        console.log("🔐 Đang đăng nhập...");
-        
-        // SIMPLIFY: Luôn xử lý như string
         const emailValue = String(formData.email || "").trim().toLowerCase();
         const passwordValue = String(formData.password || "");
         
-        console.log("📤 Login values - Email:", emailValue, "Password:", passwordValue);
-        
-        // Validate
         if (!emailValue || !passwordValue) {
           throw new Error("Vui lòng nhập đầy đủ email và mật khẩu");
         }
@@ -88,21 +102,18 @@ export default function AuthDialog() {
           password: passwordValue
         };
         
-        console.log("📤 Login payload:", loginPayload);
-        
         const res = await api.post("/auth/login", loginPayload);
         
-        console.log("📥 Login response:", res.data);
-        
         if (res.data.status === "success") {
-          login(res.data.user);
+          await login(emailValue, passwordValue);
           
           if (res.data.user.profile === null) {
-            console.log("🔄 User chưa có profile, chuyển sang khảo sát");
+            console.log("User chưa có profile, chuyển sang khảo sát");
             setStep("survey");
             setForceSurvey(true);
+            setOpen(true);
           } else {
-            console.log("✅ User đã có profile, đóng dialog");
+            console.log(" User đã có profile, đóng dialog");
             setOpen(false);
             reset();
           }
@@ -111,14 +122,9 @@ export default function AuthDialog() {
         }
         
       } else if (step === "signup") {
-        console.log("📝 Đang đăng ký...");
-        
-        // SIMPLIFY signup
         const emailValue = String(formData.email || "").trim().toLowerCase();
         const nameValue = String(formData.name || "");
         const passwordValue = String(formData.password || "");
-        
-        console.log("📤 Signup values - Email:", emailValue, "Name:", nameValue);
         
         if (!emailValue || !passwordValue || !nameValue) {
           throw new Error("Vui lòng nhập đầy đủ thông tin");
@@ -130,38 +136,32 @@ export default function AuthDialog() {
           name: nameValue
         };
         
-        console.log("📤 Signup payload:", signupPayload);
-        
         const signupRes = await api.post("/auth/signup", signupPayload);
         
-        console.log("📥 Signup response:", signupRes.data);
-        
         if (signupRes.data.status === "success") {
-          // Tự động đăng nhập
-          console.log("🔄 Auto login after signup");
+          console.log("Auto login after signup");
           const loginRes = await api.post("/auth/login", {
             email: emailValue,
             password: passwordValue
           });
           
           if (loginRes.data.status === "success") {
-            console.log("✅ Auto login success");
-            login(loginRes.data.user);
+            console.log(" Auto login success");
+            await login(emailValue, passwordValue);
             setStep("survey");
             setForceSurvey(true);
+            setOpen(true);
           }
         } else {
           throw new Error(signupRes.data.message || "Đăng ký thất bại");
         }
         
-      } else if (step === "survey") {
-        console.log("📋 Đang lưu khảo sát...");
-        
-        // Lấy email từ user đã login
-        const userEmail = user?.email;
+      } else if (step === "survey") { 
+        const userEmail = user?.email || formData.email;
+        console.log(" Email for survey:", userEmail);
         
         if (!userEmail) {
-          throw new Error("Không tìm thấy email, vui lòng đăng nhập lại");
+          throw new Error("Không tìm thấy email. Vui lòng đăng nhập lại.");
         }
         
         const profilePayload = {
@@ -170,30 +170,40 @@ export default function AuthDialog() {
           weight: formData.weight,
           health_concerns: formData.health_concerns,
           diseases: formData.diseases || formData.health_concerns
-        };
+        }; 
         
-        console.log("📤 Profile payload:", profilePayload);
-        
-        const profileRes = await api.post("/user/profile", profilePayload);
-        
-        console.log("📥 Profile response:", profileRes.data);
+        const profileRes = await api.post("/user/profile", profilePayload); 
         
         if (profileRes.data.status === "success") {
+          // Cập nhật profile trong store
           updateProfile(profileRes.data.profile);
+          
+          // Lưu vào localStorage
           localStorage.setItem("user_profile", JSON.stringify(profileRes.data.profile));
+          
+          // Reset các state
           setForceSurvey(false);
+          hasOpenedSurveyRef.current = false;
+          
+          // Đóng dialog và reset form
           setOpen(false);
           reset();
-          setTimeout(() => window.location.reload(), 100);
+          
+          console.log(" Profile saved successfully!");
+          
+          // THAY VÌ RELOAD, chuyển về step login và đóng
+          setStep("login");
+          
+          // Hiển thị thông báo thành công
+          toast.success(" Khảo sát đã được lưu thành công!");
+          
         } else {
           throw new Error(profileRes.data.message || "Lưu profile thất bại");
         }
       }
       
     } catch (e: any) {
-      console.error("❌ Error in onSubmit:", e);
-      console.error("Error response:", e.response?.data);
-      console.error("Error message:", e.message);
+      console.error("Error in onSubmit:", e);
       
       let errorMessage = "Có lỗi xảy ra, vui lòng thử lại!";
       
@@ -203,18 +213,18 @@ export default function AuthDialog() {
         errorMessage = e.message;
       }
       
-      alert(`Lỗi: ${errorMessage}`);
+      toast.error(`Lỗi: ${errorMessage}`);
     } finally {
       setIsLoading(false);
+      isSubmittingRef.current = false;
     }
   };
 
   // Xử lý khi đóng dialog
   const handleDialogClose = (isOpen: boolean) => {
-    console.log("🔒 Dialog close attempt, forceSurvey:", forceSurvey, "isOpen:", isOpen);
     
     if (forceSurvey && !isOpen) {
-      alert("Vui lòng hoàn thành khảo sát sức khỏe để tiếp tục sử dụng ứng dụng!");
+      toast.warning("Vui lòng hoàn thành khảo sát sức khỏe để tiếp tục sử dụng ứng dụng!");
       return;
     }
     
@@ -223,22 +233,23 @@ export default function AuthDialog() {
       reset();
       setStep("login");
       setForceSurvey(false);
+      hasOpenedSurveyRef.current = false;
     }
   };
 
   // Xử lý logout
-  const handleLogout = () => {
-    console.log("👋 Logout");
+  const handleLogout = () => { 
     logout();
     localStorage.removeItem("user_profile");
     setStep("login");
     setForceSurvey(false);
     setOpen(false);
+    hasOpenedSurveyRef.current = false;
+    setHasCheckedProfile(false);
   };
 
-  // Nếu đã login và có profile
-  if (isLoggedIn && user && user.profile !== null) {
-    console.log("✅ User đã login và có profile, hiển thị thông tin");
+  // Nếu đã login và có profile -> hiển thị thông tin user
+  if (isLoggedIn && user && user.profile !== null) { 
     return (
       <div className="flex items-center gap-4">
         <span className="font-bold text-cyan-600">Hi, {user?.name}</span>
@@ -255,28 +266,115 @@ export default function AuthDialog() {
 
   // Nếu đang ở trạng thái bắt buộc khảo sát
   if (isLoggedIn && forceSurvey) {
-    console.log("📋 User đã login nhưng chưa có profile, hiển thị nút khảo sát");
+    console.log(" User đã login nhưng chưa có profile, hiển thị nút khảo sát");
     return (
-      <Button 
-        className="rounded-full bg-amber-600 px-8 hover:bg-amber-700"
-        onClick={() => setOpen(true)}
-      >
-        Hoàn thành khảo sát
-      </Button>
+      <>
+        <Button 
+          className="rounded-full bg-amber-600 px-8 hover:bg-amber-700"
+          onClick={() => { 
+            setOpen(true);
+          }}
+        >
+          Hoàn thành khảo sát
+        </Button>
+        
+        {/* DIALOG survey */}
+        <Dialog open={open} onOpenChange={handleDialogClose}>
+          <DialogContent className="sm:max-w-md !rounded-[2rem]">
+            <DialogHeader className="mb-4">
+              <DialogTitle className="text-lg font-bold">
+                Khảo sát sức khỏe
+              </DialogTitle>
+              <p className="text-sm text-amber-600 font-medium">
+                 Vui lòng hoàn thành khảo sát để tiếp tục
+              </p>
+            </DialogHeader>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <Label>Email *</Label>
+                  <Input
+                    {...register("email")}
+                    type="email"
+                    placeholder="email@example.com"
+                    className="mt-1"
+                    required
+                    defaultValue={user?.email || ""}
+                    disabled={!!user?.email}
+                  />
+                  {user?.email && (
+                    <p className="text-xs text-gray-500 mt-1">Email đã được tự động điền từ tài khoản của bạn</p>
+                  )}
+                </div>
+                <div>
+                  <Label>Vấn đề sức khỏe bạn quan tâm *</Label>
+                  <textarea
+                    {...register("health_concerns")}
+                    className="w-full border p-3 rounded-lg h-24 mt-1"
+                    placeholder="Ví dụ: Đau đầu, mất ngủ, căng thẳng, dạ dày..."
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Tuổi *</Label>
+                    <Input
+                      {...register("age")}
+                      type="number"
+                      placeholder="Tuổi"
+                      className="mt-1"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label>Cân nặng (kg) *</Label>
+                    <Input
+                      {...register("weight")}
+                      type="number"
+                      placeholder="Cân nặng"
+                      step="0.1"
+                      className="mt-1"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <Button
+                type="submit"
+                className="w-full py-6 bg-cyan-600 rounded-xl font-bold hover:bg-cyan-700 disabled:opacity-50"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                    </svg>
+                    Đang xử lý...
+                  </span>
+                ) : "Lưu khảo sát"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
+  // User chưa login -> hiển thị button "Bắt đầu"
   return (
     <>
       <Dialog open={open} onOpenChange={handleDialogClose}>
         <Button 
           className="rounded-full bg-cyan-600 px-8 hover:bg-cyan-700"
           onClick={() => {
-            console.log("🎯 Opening dialog, current step:", step);
+            console.log(" Opening dialog, current step:", step);
             setOpen(true);
           }}
         >
-          {isLoggedIn ? "Khảo sát sức khỏe" : "Bắt đầu"}
+          Bắt đầu
         </Button>
         
         <DialogContent className="sm:max-w-md !rounded-[2rem]">
@@ -293,13 +391,8 @@ export default function AuthDialog() {
                     ? "Đăng nhập"
                     : step === "signup"
                       ? "Đăng ký"
-                      : "Khảo sát sức khỏe 🧠"}
+                      : "Khảo sát sức khỏe"}
                 </DialogTitle>
-                {step === "survey" && forceSurvey && (
-                  <p className="text-sm text-amber-600 font-medium">
-                    ⚠️ Vui lòng hoàn thành khảo sát để tiếp tục
-                  </p>
-                )}
               </DialogHeader>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -339,19 +432,16 @@ export default function AuthDialog() {
                   </>
                 ) : (
                   <div className="space-y-4">
-                    {/* KHÔNG hiển thị email field trong survey nếu đã login */}
-                    {!isLoggedIn && (
-                      <div>
-                        <Label>Email *</Label>
-                        <Input
-                          {...register("email")}
-                          type="email"
-                          placeholder="email@example.com"
-                          className="mt-1"
-                          required
-                        />
-                      </div>
-                    )}
+                    <div>
+                      <Label>Email *</Label>
+                      <Input
+                        {...register("email")}
+                        type="email"
+                        placeholder="email@example.com"
+                        className="mt-1"
+                        required
+                      />
+                    </div>
                     <div>
                       <Label>Vấn đề sức khỏe bạn quan tâm *</Label>
                       <textarea
@@ -408,19 +498,19 @@ export default function AuthDialog() {
                 </Button>
               </form>
               
-              {step !== "survey" && !forceSurvey && (
+              {step !== "survey" && (
                 <div className="mt-4 text-center">
                   <button 
                     onClick={() => {
-                      console.log("🔄 Switching step from", step, "to", step === "login" ? "signup" : "login");
+                      console.log("Switching step from", step, "to", step === "login" ? "signup" : "login");
                       reset();
                       setStep(step === "login" ? "signup" : "login");
                     }}
                     className="text-cyan-600 hover:text-cyan-800 font-medium text-sm"
                   >
                     {step === "login" 
-                      ? "📝 Chưa có tài khoản? Đăng ký ngay" 
-                      : "🔐 Đã có tài khoản? Đăng nhập"}
+                      ? "Chưa có tài khoản? Đăng ký ngay" 
+                      : "Đã có tài khoản? Đăng nhập"}
                   </button>
                 </div>
               )}
