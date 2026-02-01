@@ -83,9 +83,9 @@ export function ExpandableChatDemo() {
         icon={<Bot className="h-6 w-6" />}
       >
         <ExpandableChatHeader className="flex-col text-center justify-center">
-          <h1 className="text-xl font-semibold">Chat with AI ✨</h1>
+          <h1 className="text-xl font-semibold">Tư vấn về sản phẩm</h1>
           <p className="text-sm text-muted-foreground">
-            Ask me anything about the components
+            Hãy hỏi tôi bất kì thắc mắc nào về sản phẩm mà bạn đang quan tâm
           </p>
         </ExpandableChatHeader>
 
@@ -157,7 +157,7 @@ export function ExpandableChatDemo() {
                   <Mic className="size-4" />
                 </Button>
               </div>
-              <Button type="submit" size="sm" className="ml-auto gap-1.5">
+              <Button type="submit" size="sm" className="ml-auto gap-1.5 bg-blue-700">
                 Send Message
                 <CornerDownLeft className="size-3.5" />
               </Button>

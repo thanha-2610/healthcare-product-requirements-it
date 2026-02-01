@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, Search, ShoppingBasket } from "lucide-react";
+import { Menu } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -14,7 +14,8 @@ import AuthDialog from "@/components/auth-dialog";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-const navigation = [ 
+const navigation = [
+  { name: "Home", href: "/" },
   { name: "Shop", href: "#" },
   { name: "Search", href: "/search" },
   { name: "Collections", href: "#" },
@@ -37,7 +38,7 @@ export function Navbar() {
 
         <nav className="hidden lg:flex items-center justify-between w-full">
           {navigation.map((item) => (
-            <Link 
+            <Link
               key={item.name}
               href={item?.href}
               className="px-4 py-2 text-sm font-medium cursor-pointer relative group hover:text-primary transition-colors bg-transparent border-none"
@@ -45,8 +46,6 @@ export function Navbar() {
               {item.name}
             </Link>
           ))}
-           
-          
         </nav>
 
         {/* Mobile Nav Trigger */}
@@ -76,9 +75,10 @@ export function Navbar() {
             </SheetHeader>
             <nav className="flex flex-col p-6 space-y-1">
               {navigation.map((item) => (
-                <Button 
+                <Button
                   key={item.name}
-                  size="icon"onClick={() => router.push(item?.href)}
+                  size="icon"
+                  onClick={() => router.push(item?.href)}
                   variant="ghost"
                   className="justify-start px-2 h-12 text-base font-medium hover:bg-accent/50 hover:text-primary transition-colors"
                 >
@@ -86,7 +86,7 @@ export function Navbar() {
                 </Button>
               ))}
             </nav>
-            
+
             <Separator />
             <div className="p-6">
               <AuthDialog />

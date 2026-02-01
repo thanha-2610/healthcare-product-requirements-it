@@ -89,7 +89,7 @@ class ProductRecommender:
             self.feature_matrix = self.vectorizer.fit_transform(self.df['features'])
             print(f"TF-IDF model trained with {self.feature_matrix.shape[1]} features")
         else:
-            print("⚠️ No data to train model")
+            print("No data to train model")
     
     def search_products(self, query, limit=20):
         """Tìm kiếm sản phẩm bằng TF-IDF"""
@@ -158,7 +158,7 @@ class ProductRecommender:
             
             # Nếu không có query, trả về popular products
             if not query.strip():
-                print("ℹ️ No query, returning popular products")
+                print("No query, returning popular products")
                 return self.get_popular_products(limit)
             
             # Tìm kiếm bằng TF-IDF
@@ -282,7 +282,7 @@ if not PRODUCTS_DF.empty:
     print("Recommender initialized successfully")
 else:
     recommender = None
-    print("⚠️ Recommender not initialized due to empty data")
+    print("Recommender not initialized due to empty data")
 
 # ==================== HELPER FUNCTIONS ====================
 def save_search_history(history):
@@ -315,7 +315,7 @@ def save_search_history(history):
         print(f"Saved search history for {history['email']}")
         
     except Exception as e:
-        print(f"⚠️ Error saving search history: {e}")
+        print(f"Error saving search history: {e}")
 
 # ==================== AUTH APIs ====================
 @app.route('/auth/signup', methods=['POST', 'OPTIONS'])
@@ -376,13 +376,13 @@ def login():
                 nested = data['email']
                 if 'email' in nested and isinstance(nested['email'], str):
                     email = nested['email'].strip().lower()
-                    print(f"⚠️ Extracted email from nested object: {email}")
+                    print(f"Extracted email from nested object: {email}")
                 else:
                     # Try to get any string value from the object
                     for key, value in nested.items():
                         if isinstance(value, str) and '@' in value:
                             email = value.strip().lower()
-                            print(f"⚠️ Found email in nested object key '{key}': {email}")
+                            print(f"Found email in nested object key '{key}': {email}")
                             break
             
             # Get password
@@ -518,7 +518,7 @@ def search_products():
             try:
                 save_search_history(search_history_data)
             except Exception as e:
-                print(f"⚠️ Could not save search history: {e}")
+                print(f"Could not save search history: {e}")
         
         print(f"Search completed. Found {len(results)} products")
         
@@ -679,7 +679,7 @@ def track_product_view():
         if not product_id:
             return jsonify({"message": "Thiếu product_id"}), 400
         
-        print(f"👁️ Tracking view: {email} viewed product {product_id}")
+        print(f"Tracking view: {email} viewed product {product_id}")
         
         # Thêm vào lịch sử xem (không trùng)
         if product_id not in USER_VIEW_HISTORY[email]:
