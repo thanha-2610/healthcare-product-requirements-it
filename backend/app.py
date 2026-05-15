@@ -12,7 +12,7 @@ CORS(app)
 
 # --- 1. CẤU HÌNH AI & TỪ ĐIỂN ĐỒNG NGHĨA (MEDICAL SYNONYMS) ---
 # Cấu hình Gemini AI cho kiến trúc RAG [cite: 25, 32]
-genai.configure(api_key="YOUR_GEMINI_API_KEY")
+genai.configure(api_key="AIzaSyBHQ29R4RIMA4RMsQ6-_s6fHi3Z9rFGVkU")
 llm_model = genai.GenerativeModel('gemini-1.5-flash')
 
 # Bộ từ điển giúp thu hẹp khoảng cách ngữ nghĩa (Semantic Gap) [cite: 15, 20]
@@ -31,21 +31,22 @@ class ProductRecommender:
         self.df = pd.read_csv(data_path)
         self.df.fillna('', inplace=True)
         
-        # Tiền xử lý: Làm giàu dữ liệu bằng từ đồng nghĩa để tăng độ khớp (Semantic Enrichment) [cite: 52]
-        self.df['enriched_features'] = self.df.apply(self._enrich_row, axis=1)
-        
-        # Khởi tạo ma trận TF-IDF [cite: 2, 15]
-        self.vectorizer = TfidfVectorizer()
-        self.tfidf_matrix = self.vectorizer.fit_transform(self.df['enriched_features'])
+        # Tạo cột features bằng cách gộp các cột văn bản
+        self.df['features'] = self.df['name'].astype(str) + " " + self.df['category'].astype(str) + " " + self.df['description'].astype(str) + " " + self.df['health_goal'].astype(str)
 
-    def _enrich_row(self, row):
-        # Kết hợp các trường quan trọng [cite: 48, 131]
-        text = f"{row['product_name']} {row['category']} {row['description']} {row['health_goal']}".lower()
-        # Thêm từ chuẩn hóa từ từ điển đồng nghĩa
+        # Tiền xử lý: Làm giàu dữ liệu bằng từ đồng nghĩa để tăng độ khớp (Semantic Enrichment)
+        self.df['features'] = self.df['features'].apply(self.enrich_text)
+        
+        # Khởi tạo ma trận TF-IDF
+        self.vectorizer = TfidfVectorizer()
+        self.tfidf_matrix = self.vectorizer.fit_transform(self.df['features'])
+
+    def enrich_text(self, text):
+        text = str(text).lower()
         for standard, synonyms in synonyms_dict.items():
             for syn in synonyms:
                 if syn in text:
-                    text += f" {standard}"
+                    text += f" {standard}" # Thêm từ chuẩn vào để tăng trọng số TF-IDF
         return text
 
     def get_recommendations(self, query, user_profile=None, top_n=5):
@@ -64,28 +65,25 @@ class ProductRecommender:
             product = self.df.iloc[i]
             score = similarities[i]
 
-            # --- BỘ LỌC CỨNG (HARD FILTERS - THÔNG TƯ 24) [cite: 18, 46, 73] ---
+            # --- BỘ LỌC CỨNG (HARD FILTERS) ---
             
-            # A. Lọc theo độ tuổi (Ví dụ: Dưới 12 tuổi chỉ dùng sản phẩm trẻ em)
-            if user_age < 12 and 'Trẻ em' not in product['target_user']:
-                continue
-                
-            # B. Lọc theo chống chỉ định (Kiểm tra dị ứng thành phần) [cite: 11, 48]
-            is_unsafe = False
-            for allergy in user_allergies:
-                if allergy.lower() in product['ingredients'].lower():
-                    is_unsafe = True
-                    break
-            if is_unsafe: continue
+            # A. Lọc theo độ tuổi
+            age_range = str(product.get('age_range', ''))
+            if age_range and '-' in age_range:
+                try:
+                    min_age, max_age = map(int, age_range.split('-'))
+                    if user_age < min_age or user_age > max_age:
+                        continue
+                except:
+                    pass
 
             if score > 0.05: # Ngưỡng tối thiểu để đảm bảo tính liên quan
                 results.append({
                     "id": int(product['id']),
-                    "product_name": product['product_name'],
+                    "name": product['name'],
                     "category": product['category'],
                     "description": product['description'],
-                    "contraindication": product['contraindication'],
-                    "ingredients": product['ingredients'],
+                    "health_goal": product.get('health_goal', ''),
                     "similarity_score": round(float(score), 2)
                 })
         return results
@@ -106,7 +104,7 @@ def chatbot_consult():
     products = recommender.get_recommendations(user_query, user_profile=user_profile, top_n=3)
     
     # 2. Xây dựng Ngữ cảnh (Context) bám sát dữ liệu thật để tránh ảo giác [cite: 31, 71]
-    context = "\n".join([f"- {p['product_name']}: {p['description']}. Chống chỉ định: {p['contraindication']}" for p in products])
+    context = "\n".join([f"- {p['name']}: {p['description']}. Mục tiêu: {p.get('health_goal', '')}" for p in products])
     
     # 3. Prompt Engineering cho LLM [cite: 69, 70]
     prompt = f"""
