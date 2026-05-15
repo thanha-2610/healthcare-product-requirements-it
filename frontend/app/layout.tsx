@@ -15,7 +15,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Machine Learning Powered | TN.Care",
-  description: "Cá nhân hóa chăm sóc sức khỏe bằng Machine Learning, phân tích dữ liệu cá nhân để đề xuất giải pháp và sản phẩm phù hợp nhất",
+  description:
+    "Personalize healthcare using Machine Learning by analyzing personal data to recommend the most suitable solutions and products",
 };
 
 export default function RootLayout({
@@ -28,7 +29,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-       <ToastProvider> {children}</ToastProvider>
+        <ToastProvider> {children}</ToastProvider>
       </body>
     </html>
   );

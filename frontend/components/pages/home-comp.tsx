@@ -3,9 +3,9 @@ import { Feature197 } from "@/components/accordion-feature-section";
 import { ExpandableChatDemo } from "@/components/chat-box-demo";
 import { CommerceHero } from "@/components/commerce-hero";
 import { GalleryPersonalized } from "@/components/GalleryPersonalized";
-import { LogoCloud } from "@/components/logo-cloud-4";
-import { cn } from "@/lib/utils";
 import { GalleryPopular } from "../GalleryPopular";
+import { HeroSection } from "../hero-section-3";
+import GlobeSection from "../globe-section";
 
 const demoDataFeature197 = {
   features: [
@@ -40,76 +40,23 @@ const demoDataFeature197 = {
   ],
 };
 
-const logos = [
-  {
-    src: "/logo-care-0.png",
-    alt: "Nvidia Logo",
-  },
-  {
-    src: "/logo-care-1.png",
-    alt: "Supabase Logo",
-  },
-  {
-    src: "/logo-care-2.png",
-    alt: "OpenAI Logo",
-  },
-  {
-    src: "/logo-care-0.png",
-    alt: "Turso Logo",
-  },
-  {
-    src: "/logo-care-1.png",
-    alt: "Vercel Logo",
-  },
-  {
-    src: "/logo-care-2.png",
-    alt: "GitHub Logo",
-  },
-  {
-    src: "/logo-care-0.png",
-    alt: "Claude AI Logo",
-  },
-  {
-    src: "/logo-care-1.png",
-    alt: "Clerk Logo",
-  },
-];
-
 export default function HomeComp() {
   return (
-    <div className=" container px-2 mx-auto">
+    <>
+      <HeroSection />
       <CommerceHero />
-      {/* Sản phẩm phổ biến - LUÔN HIỂN THỊ */}
-      <GalleryPopular />
+      <div className=" container px-2 mx-auto">
+        {/* Sản phẩm phổ biến - LUÔN HIỂN THỊ */}
+        <GalleryPopular />
 
-      {/* Gợi ý cá nhân hóa (chỉ hiển thị nếu có user) */}
-      <GalleryPersonalized />
+        {/* Gợi ý cá nhân hóa (chỉ hiển thị nếu có user) */}
+        <GalleryPersonalized />
 
-      <Feature197 {...demoDataFeature197} />
-      <div className="h-96 w-full place-content-center px-4">
-        <div
-          aria-hidden="true"
-          className={cn(
-            "-top-1/2 -translate-x-1/2 pointer-events-none absolute left-1/2 h-[120vmin] w-[120vmin] rounded-b-full",
-            "bg-[radial-gradient(ellipse_at_center,--theme(--color-foreground/.1),transparent_50%)]",
-            "blur-[30px]",
-          )}
-        />
-        <div className="w-full">
-          <h2 className="mb-5 text-center">
-            <span className="block font-medium text-2xl text-cyan-300">
-              Thương hiệu sản phẩm sức khỏe đáng tin cậy
-            </span>
-            <span className="font-black text-2xl text-blue-700 tracking-tight md:text-3xl max-w-7xl">
-              Các thương hiệu được lựa chọn cẩn thận mang lại chất lượng và độ
-              tin cậy trong chăm sóc sức khỏe
-            </span>
-          </h2>
+        <Feature197 {...demoDataFeature197} />
+        <GlobeSection />
 
-          <LogoCloud logos={logos} />
-        </div>
+        <ExpandableChatDemo />
       </div>
-      <ExpandableChatDemo />
-    </div>
+    </>
   );
 }

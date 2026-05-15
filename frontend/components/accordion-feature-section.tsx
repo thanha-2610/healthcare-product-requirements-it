@@ -70,13 +70,13 @@ const Feature197 = ({ features = defaultFeatures }: Feature197Props) => {
                     className="cursor-pointer py-5 !no-underline transition"
                   >
                     <h6
-                      className={`text-xl font-semibold ${tab.id === activeTabId ? "text-blue-600" : "text-muted-foreground"}`}
+                      className={`text-xl font-semibold ${tab.id === activeTabId ? "text-sky-900" : "text-muted-foreground"}`}
                     >
                       {tab.title}
                     </h6>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <p className="mt-3 text-cyan-500">{tab.description}</p>
+                    <p className="mt-3 text-sky-700">{tab.description}</p>
                     <div className="mt-4 md:hidden">
                       <img
                         src={tab.image}

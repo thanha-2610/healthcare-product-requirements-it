@@ -1,18 +1,17 @@
 "use client";
 import React, { ReactNode } from "react";
-import { Navbar } from "./ui/header";
-import Footer from "./ui/footer-1";
+import { HeroHeader } from "./ui/header";
+import { CinematicFooter } from "../motion-footer";
 
 type Props = { children: ReactNode };
 
 const MainLayout = ({ children }: Props) => {
   return (
     <div>
-      <Navbar />
-      <div className="w-full relative min-h-screen">
-        {children}
-      </div>
-      <Footer />
+      <HeroHeader />
+
+      <div className="w-full relative min-h-screen">{children}</div>
+      <CinematicFooter />
     </div>
   );
 };

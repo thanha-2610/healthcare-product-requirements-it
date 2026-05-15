@@ -374,7 +374,7 @@ export default function AuthDialog() {
             setOpen(true);
           }}
         >
-          Bắt đầu
+          Start
         </Button>
         
         <DialogContent className="sm:max-w-md !rounded-[2rem]">

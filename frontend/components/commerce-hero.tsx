@@ -21,25 +21,25 @@ const defaultCategories = [
     title: "Thực phẩm Chức năng",
     image: "/featured-categories-0.png",
     href: "/search?q=Thực phẩm chức năng",
-    category: "Thực phẩm chức năng"
+    category: "Thực phẩm chức năng",
   },
   {
     title: "Thiết bị Y tế Gia đình",
     image: "/featured-categories-1.png",
     href: "/search?q=Thiết bị y tế",
-    category: "Thiết bị y tế"
+    category: "Thiết bị y tế",
   },
   {
     title: "Chăm sóc Cá nhân",
     image: "/featured-categories-2.png",
     href: "/search?q=Chăm sóc cá nhân",
-    category: "Chăm sóc cá nhân"
+    category: "Chăm sóc cá nhân",
   },
   {
     title: "Hỗ trợ Giấc ngủ",
     image: "/featured-categories-3.png",
     href: "/search?q=Hỗ trợ giấc ngủ",
-    category: "Hỗ trợ giấc ngủ"
+    category: "Hỗ trợ giấc ngủ",
   },
 ];
 
@@ -54,42 +54,52 @@ export function CommerceHero() {
     const fetchCategories = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('http://localhost:5000/api/products/categories');
-        
+        const response = await fetch(
+          "http://localhost:5000/api/products/categories",
+        );
+
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
-        
+
         if (data.status === "success" && Array.isArray(data.categories)) {
           // Chuyển đổi categories từ API sang định dạng cần thiết
-          const apiCategories = data.categories.map((catName: string, index: number) => ({
-            category: catName,
-            count: 0, // Bạn có thể lấy count từ API nếu có
-            image: defaultCategories[index % defaultCategories.length]?.image || "/placeholder-category.png"
-          }));
-          
+          const apiCategories = data.categories.map(
+            (catName: string, index: number) => ({
+              category: catName,
+              count: 0, // Bạn có thể lấy count từ API nếu có
+              image:
+                defaultCategories[index % defaultCategories.length]?.image ||
+                "/placeholder-category.png",
+            }),
+          );
+
           // Lấy top 4 categories (hoặc tất cả nếu ít hơn 4)
           const topCategories = apiCategories.slice(0, 4);
           setCategories(topCategories);
         } else {
           // Fallback to default categories
-          setCategories(defaultCategories.map(cat => ({ 
-            category: cat.category, 
-            count: 0,
-            image: cat.image 
-          })));
+          setCategories(
+            defaultCategories.map((cat) => ({
+              category: cat.category,
+              count: 0,
+              image: cat.image,
+            })),
+          );
         }
       } catch (error) {
         console.error("Error fetching categories:", error);
         setError("Không thể tải danh mục. Đang sử dụng danh mục mặc định.");
         // Fallback to default categories
-        setCategories(defaultCategories.map(cat => ({ 
-          category: cat.category, 
-          count: 0,
-          image: cat.image 
-        })));
+        setCategories(
+          defaultCategories.map((cat) => ({
+            category: cat.category,
+            count: 0,
+            image: cat.image,
+          })),
+        );
       } finally {
         setIsLoading(false);
       }
@@ -108,97 +118,20 @@ export function CommerceHero() {
   const getCategoryImage = (categoryName: string, index: number) => {
     // Tìm category name tương ứng trong defaultCategories
     const matchedCategory = defaultCategories.find(
-      cat => cat.category.toLowerCase() === categoryName.toLowerCase()
+      (cat) => cat.category.toLowerCase() === categoryName.toLowerCase(),
     );
-    
+
     if (matchedCategory) return matchedCategory.image;
-    
+
     // Fallback to default images based on index
-    return defaultCategories[index % defaultCategories.length]?.image || "/placeholder-category.png";
+    return (
+      defaultCategories[index % defaultCategories.length]?.image ||
+      "/placeholder-category.png"
+    );
   };
 
   return (
-    <div>
-      <motion.section
-        className="w-full px-4 py-24"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      >
-        <div className="mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 text-sm font-medium tracking-wider text-cyan-600 uppercase bg-cyan-100 rounded-full"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-            </span>
-            Machine Learning Powered
-          </motion.div>
-
-          <motion.h1
-            className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight mb-6 leading-[1.1]"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <span className="bg-gradient-to-r from-blue-600 to-cyan-400 bg-clip-text text-transparent">
-              Hệ thống gợi ý
-            </span>
-            <br />
-            <span className="text-blue-900">Sức khỏe cá nhân hóa</span>
-          </motion.h1>
-
-          <motion.p
-            className="text-base md:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            Ứng dụng các thuật toán học máy để phân tích đặc điểm nhân khẩu học
-            và chỉ số sức khỏe, từ đó đưa ra danh mục sản phẩm tối ưu cho từng
-            cá thể.
-          </motion.p>
-
-          {/* Search Box */}
-          <motion.div
-            className="max-w-xl mx-auto mt-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-          >
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Tìm kiếm sản phẩm sức khỏe..."
-                className="w-full px-6 py-4 text-lg rounded-2xl border-2 border-blue-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-lg"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    const query = (e.target as HTMLInputElement).value;
-                    if (query.trim()) {
-                      router.push(`/search?q=${encodeURIComponent(query)}`);
-                    }
-                  }
-                }}
-              />
-              <button
-                onClick={() => {
-                  const input = document.querySelector('input') as HTMLInputElement;
-                  if (input?.value.trim()) {
-                    router.push(`/search?q=${encodeURIComponent(input.value)}`);
-                  }
-                }}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 transition-colors"
-              >
-                <ArrowUpRight className="w-5 h-5" />
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      </motion.section>
-
+    <div className="max-w-7xl mx-auto">
       {/* Grid Categories Section */}
       <div className="mt-12">
         <div className="flex items-end justify-between mb-8 px-4">
@@ -210,7 +143,7 @@ export function CommerceHero() {
               Khám phá các nhóm sản phẩm được chuyên gia khuyên dùng
             </p>
           </div>
-          
+
           {!isLoading && categories.length > 0 && (
             <Badge variant="outline" className="text-blue-600 border-blue-200">
               {categories.length} danh mục
@@ -258,9 +191,9 @@ export function CommerceHero() {
                 title: cat.category,
                 image: getCategoryImage(cat.category, index),
                 href: `/search?q=${encodeURIComponent(cat.category)}`,
-                category: cat.category
+                category: cat.category,
               };
-              
+
               return (
                 <CategoryCard
                   key={cat.category}
@@ -321,7 +254,10 @@ function CategoryCard({ category, index, count, onClick }: CategoryCardProps) {
             {category.title}
           </h3>
           {count !== undefined && count > 0 && (
-            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600 border-blue-200">
+            <Badge
+              variant="outline"
+              className="text-xs bg-blue-50 text-blue-600 border-blue-200"
+            >
               {count}+
             </Badge>
           )}
@@ -340,7 +276,8 @@ function CategoryCard({ category, index, count, onClick }: CategoryCardProps) {
               className="object-contain"
               onError={(e) => {
                 // Fallback image on error
-                (e.target as HTMLImageElement).src = "/placeholder-category.png";
+                (e.target as HTMLImageElement).src =
+                  "/placeholder-category.png";
               }}
             />
           </div>
