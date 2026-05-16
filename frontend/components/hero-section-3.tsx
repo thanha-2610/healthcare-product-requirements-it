@@ -6,6 +6,7 @@ import { InfiniteSlider } from "@/components/ui/infinite-slider";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { GlobeComponent } from "./interactive-globe";
 
 const transitionVariants = {
   item: {
@@ -35,6 +36,8 @@ export function HeroSection() {
       <main className="overflow-hidden">
         <section>
           <div className="relative mx-auto max-w-6xl px-6 pt-32 lg:pb-16 lg:pt-48">
+            <div className="absolute top-1/3 right-1/4 w-96 h-96 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
+
             <div className="relative z-10 mx-auto max-w-4xl text-center">
               <AnimatedGroup
                 variants={{
@@ -49,15 +52,16 @@ export function HeroSection() {
                   ...transitionVariants,
                 }}
               >
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 text-sm font-medium tracking-wider text-cyan-600 bg-cyan-100 rounded-full">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-                  </span>
+                <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs text-muted-foreground mb-6 w-fit">
+                  <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   Machine Learning Powered
                 </div>
-                <h1 className=" text-4xl font-bold sm:text-5xl md:text-6xl bg-gradient-to-r from-blue-600 to-emerald-400 bg-clip-text text-transparent">
-                  Smart Health Assistant Powered by Artificial Intelligence
+                <h1 className=" text-4xl font-bold sm:text-5xl md:text-6xl text-black">
+                  Smart Health Assistant <br />
+                  <span className="bg-gradient-to-r from-blue-600 to-emerald-400 bg-clip-text text-transparent">
+                    {" "}
+                    Powered by Artificial Intelligence
+                  </span>
                 </h1>
 
                 <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg">
@@ -111,13 +115,9 @@ export function HeroSection() {
                   </div>
                 </form>
 
-                <Image
-                  src="/hero-section.png"
-                  alt="Banner"
-                  width={600}
-                  height={600}
-                  className="mx-auto"
-                />
+                <div className="flex-1 flex items-center justify-center p-4 md:p-0 min-h-[400px]">
+                  <GlobeComponent size={460} />
+                </div>
               </AnimatedGroup>
             </div>
           </div>

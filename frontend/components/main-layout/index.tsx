@@ -1,7 +1,7 @@
 "use client";
 import React, { ReactNode } from "react";
 import { HeroHeader } from "./ui/header";
-import { CinematicFooter } from "../motion-footer";
+import { CinematicFooter } from "./ui/motion-footer";
 
 type Props = { children: ReactNode };
 
