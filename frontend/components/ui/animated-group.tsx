@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import { motion, Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import React from 'react';
+import { usePreloader } from '@/components/app-preloader';
 
 type PresetType =
   | 'fade'
@@ -143,6 +144,7 @@ function AnimatedGroup({
   variants,
   preset,
 }: AnimatedGroupProps) {
+  const isLoading = usePreloader();
   const selectedVariants = preset
     ? presetVariants[preset]
     : { container: defaultContainerVariants, item: defaultItemVariants };
@@ -152,7 +154,7 @@ function AnimatedGroup({
   return (
     <motion.div
       initial='hidden'
-      animate='visible'
+      animate={isLoading ? 'hidden' : 'visible'}
       variants={containerVariants}
       className={cn(className)}
     >

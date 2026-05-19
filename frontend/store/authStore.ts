@@ -10,6 +10,8 @@ export const useAuthStore = create<AuthState>()(
       isLoggedIn: false,
       isLoading: false,
       error: null,
+      isAuthDialogOpen: false,
+      setAuthDialogOpen: (open: boolean) => set({ isAuthDialogOpen: open }),
 
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });

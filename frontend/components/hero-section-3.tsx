@@ -35,8 +35,8 @@ export function HeroSection() {
     <>
       <main className="overflow-hidden">
         <section>
-          <div className="relative mx-auto max-w-6xl px-6 pt-32 lg:pb-16 lg:pt-48">
-            <div className="absolute top-1/3 right-1/4 w-96 h-96 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
+          <div className="relative mx-auto max-w-7xl px-6 pt-32 lg:pb-16 lg:pt-48">
+            <div className="absolute top-1/3 right-1/4 w-96 h-96 rounded-full bg-blue-500/20 blur-3xl pointer-events-none" />
 
             <div className="relative z-10 mx-auto max-w-4xl text-center">
               <AnimatedGroup
@@ -165,8 +165,8 @@ const logos = [
 
 const LogoCloud = () => {
   return (
-    <section className="bg-background pb-16 md:pb-32">
-      <div className="group relative m-auto max-w-6xl px-6">
+    <section className="bg-background">
+      <div className="group relative m-auto max-w-7xl px-6">
         <div className="flex flex-col items-center md:flex-row">
           <div className="inline md:max-w-44 md:border-r md:pr-6">
             <p className="text-end text-sm">Trusted health product brand</p>

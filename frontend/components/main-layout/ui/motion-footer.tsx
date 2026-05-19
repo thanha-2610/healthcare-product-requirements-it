@@ -310,7 +310,7 @@ export function CinematicFooter() {
             className="absolute -bottom-[5vh] left-1/2 -translate-x-1/2 whitespace-nowrap z-0 pointer-events-none select-none text-[26vw] leading-[0.75] font-black tracking-[-0.05em] text-transparent bg-clip-text bg-gradient-to-b from-sky-400/20 to-transparent"
             style={{ WebkitTextStroke: "1px rgba(56, 189, 248, 0.15)" }}
           >
-            TN.CARE
+            THANHA.CARE
           </div>
 
           {/* 1. Diagonal Sleek Marquee (Top of footer) */}
@@ -399,7 +399,7 @@ export function CinematicFooter() {
           <div className="relative z-20 w-full pb-8 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
             {/* Copyright */}
             <div className="text-muted-foreground text-[10px] md:text-xs font-semibold tracking-widest uppercase order-2 md:order-1">
-              © 2026 TN.CARE. All rights reserved.
+              © 2026 THANHA.CARE. All rights reserved.
             </div>
 
             {/* "Made with Love" Badge */}
@@ -414,7 +414,7 @@ export function CinematicFooter() {
                 by
               </span>
               <span className="text-cyan-800 font-black text-xs md:text-sm tracking-normal ml-1">
-                TN.CARE
+                THANHA.CARE
               </span>
             </div>
           </div>

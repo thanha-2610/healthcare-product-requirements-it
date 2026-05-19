@@ -3,12 +3,12 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import AuthDialog from "@/components/auth-dialog";
 
 const menuItems = [
-  { name: "Features", href: "#link" },
-  { name: "Solution", href: "#link" },
-  { name: "Pricing", href: "#link" },
-  { name: "About", href: "#link" },
+  { name: "Categories", href: "#featured-categories" },
+  { name: "Recommendations", href: "#recommended-products" },
+  { name: "Discover", href: "#discover" },
 ];
 
 export const HeroHeader = () => {
@@ -41,9 +41,9 @@ export const HeroHeader = () => {
               <Link
                 href="/"
                 aria-label="home"
-                className="text-xl font-semibold bg-gradient-to-r from-sky-600 to-cyan-500/80 bg-clip-text text-transparent"
+                className="text-lg font-semibold bg-gradient-to-r from-sky-600 to-cyan-500/80 bg-clip-text text-transparent"
               >
-                TN.CARE
+                THANHA.CARE
               </Link>
 
               <button
@@ -87,34 +87,7 @@ export const HeroHeader = () => {
                 </ul>
               </div>
               <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className={cn(isScrolled && "lg:hidden")}
-                >
-                  <Link href="#">
-                    <span>Login</span>
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  size="sm"
-                  className={cn(isScrolled && "lg:hidden")}
-                >
-                  <Link href="#">
-                    <span>Sign Up</span>
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  size="sm"
-                  className={cn(isScrolled ? "lg:inline-flex" : "hidden")}
-                >
-                  <Link href="#">
-                    <span>Get Started</span>
-                  </Link>
-                </Button>
+                <AuthDialog />
               </div>
             </div>
           </div>

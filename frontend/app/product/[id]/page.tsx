@@ -4,7 +4,7 @@ import MainLayout from '@/components/main-layout'
 import ProductDetailComp from '@/components/pages/product-detail-comp'
 
 export const metadata: Metadata = {
-  title: 'Tìm kiếm Sản Phẩm - TN.Care',
+  title: 'Tìm kiếm Sản Phẩm - THANHA.CARE',
   description: 'Tìm kiếm sản phẩm chăm sóc sức khỏe phù hợp với nhu cầu của bạn',
 }
 

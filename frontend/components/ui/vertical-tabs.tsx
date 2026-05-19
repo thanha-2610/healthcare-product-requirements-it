@@ -83,18 +83,22 @@ export function VerticalTabs() {
   };
 
   return (
-    <section className="w-full bg-background py-8 md:py-16 lg:py-24">
-      <div className="container mx-auto">
+    <section
+      id="discover"
+      className="w-full bg-background py-8 md:py-16 lg:py-24 max-w-7xl mx-auto px-6"
+    >
+      <div className="mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
           {/* Left Column: Content */}
           <div className="lg:col-span-5 flex flex-col justify-center order-2 lg:order-1 pt-4">
-            <div className="space-y-1 mb-12">
-              <h2 className="tracking-tighter text-balance text-3xl font-medium md:text-4xl lg:text-5xl text-foreground">
-                How I can help you
+            <div className="mb-8 px-4">
+              <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
+                Personalized Health & Wellness
               </h2>
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-[0.3em] block ml-0.5">
-                (SERVICES)
-              </span>
+              <p className="text-slate-500">
+                Discover practical healthcare knowledge, healthy lifestyle tips,
+                and trusted wellness solutions tailored to your everyday needs.
+              </p>
             </div>
 
             <div className="flex flex-col space-y-0">
