@@ -139,7 +139,7 @@ export function VerticalTabs() {
                     <div className="flex flex-col gap-2 flex-1">
                       <span
                         className={cn(
-                          "text-2xl md:text-3xl lg:text-4xl font-normal tracking-tight transition-colors duration-500",
+                          "text-xl md:text-2xl lg:text-3xl font-medium tracking-tight transition-colors duration-500",
                           isActive ? "text-sky-900" : "",
                         )}
                       >

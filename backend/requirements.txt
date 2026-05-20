@@ -1,0 +1,5 @@
+pandas
+flask
+flask-cors
+scikit-learn
+google-generativeai

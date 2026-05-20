@@ -33,15 +33,15 @@ export const HeroHeader = () => {
           className={cn(
             "mx-auto mt-2 max-w-6xl px-6 transition-all duration-300 lg:px-12",
             isScrolled &&
-              "bg-background/50 max-w-4xl rounded-2xl border backdrop-blur-lg lg:px-5",
+              "bg-background/50 max-w-4xl rounded-lg border backdrop-blur-lg lg:px-5",
           )}
         >
-          <div className="relative flex flex-wrap items-center justify-between gap-6 py-3 lg:gap-0 lg:py-4">
+          <div className="relative flex flex-wrap items-center justify-between gap-6 py-3 lg:gap-0 lg:py-2">
             <div className="flex w-full justify-between lg:w-auto">
               <Link
                 href="/"
                 aria-label="home"
-                className="text-lg font-semibold bg-gradient-to-r from-sky-600 to-cyan-500/80 bg-clip-text text-transparent"
+                className="text-md font-semibold bg-gradient-to-r from-sky-600 to-cyan-500/80 bg-clip-text text-transparent"
               >
                 THANHA.CARE
               </Link>
@@ -62,7 +62,7 @@ export const HeroHeader = () => {
                   <li key={index}>
                     <Link
                       href={item.href}
-                      className="text-muted-foreground hover:text-accent-foreground block duration-150"
+                      className="text-muted-foreground hover:text-blue-950 block duration-150"
                     >
                       <span>{item.name}</span>
                     </Link>

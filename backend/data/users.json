@@ -1,0 +1,14 @@
+{
+    "tn.care1@gmail.com": {
+        "email": "tn.care1@gmail.com",
+        "name": "nha123 duobng thanh nha 1234",
+        "username": "nha123 duobng thanh nha 1234",
+        "password": "123456",
+        "profile": {
+            "age": 22,
+            "weight": 55,
+            "health_concerns": "stress",
+            "diseases": "stress"
+        }
+    }
+}

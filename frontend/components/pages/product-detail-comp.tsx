@@ -20,6 +20,7 @@ import Image from "next/image";
 import { useProductStore } from "@/store/productStore";
 import { useAuthStore } from "@/store/authStore";
 import { ProductCard } from "../ui/product-card";
+import { productApi } from "@/lib/api";
 
 export default function ProductDetailComp() {
   const params = useParams();
@@ -59,12 +60,9 @@ export default function ProductDetailComp() {
   const fetchSimilarProducts = async (id: number) => {
     try {
       setIsSimilarLoading(true);
-      const res = await fetch(
-        `http://localhost:5000/api/products/similar/${id}`,
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setSimilarProducts(data);
+      const res = await productApi.getSimilarProducts(id);
+      if (res && res.status === "success") {
+        setSimilarProducts(res.similar_products || []);
       }
     } catch (err) {
       console.error("Failed to fetch similar products", err);

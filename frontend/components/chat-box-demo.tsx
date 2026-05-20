@@ -213,17 +213,28 @@ export function ExpandableChatDemo() {
                             <Link
                               href={`/product/${prod.id}`}
                               key={prod.id}
-                              className="bg-background/80 rounded-lg p-3 border shadow-sm flex flex-col gap-1 text-left"
+                              className="bg-background/80 rounded-lg p-3 border shadow-sm flex items-center gap-3 text-left hover:border-cyan-500 transition-colors"
                             >
-                              <span className="text-[10px] font-medium text-blue-700 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300 w-fit px-2 py-0.5 rounded-full">
-                                {prod.category}
-                              </span>
-                              <p className="font-semibold text-foreground text-sm">
-                                {prod.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground line-clamp-2">
-                                {prod.description}
-                              </p>
+                              <div className="relative w-12 h-12 bg-gray-50 dark:bg-zinc-900 rounded-md overflow-hidden shrink-0 flex items-center justify-center p-1 border border-gray-100 dark:border-zinc-800">
+                                <Image
+                                  src="/placeholder-product.jpg"
+                                  alt={prod.name}
+                                  width={48}
+                                  height={48}
+                                  className="object-contain"
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                                <span className="text-[9px] font-semibold text-cyan-700 bg-cyan-50 dark:bg-cyan-950/40 dark:text-cyan-400 w-fit px-2 py-0.5 rounded-full">
+                                  {prod.category}
+                                </span>
+                                <p className="font-semibold text-foreground text-sm truncate">
+                                  {prod.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground line-clamp-1">
+                                  {prod.description}
+                                </p>
+                              </div>
                             </Link>
                           ))}
                         </div>

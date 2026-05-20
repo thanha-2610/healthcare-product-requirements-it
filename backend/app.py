@@ -6,13 +6,15 @@ from flask_cors import CORS
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import google.generativeai as genai
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 CORS(app)
+load_dotenv()
 
 # --- 1. AI CONFIGURATION & SYNONYM DICTIONARY (MEDICAL SYNONYMS) ---
-# Gemini AI configuration for RAG architecture
-genai.configure(api_key="AIzaSyBHQ29R4RIMA4RMsQ6-_s6fHi3Z9rFGVkU")
+# Gemini AI configuration for RAG architecture 
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 llm_model = genai.GenerativeModel('gemini-1.5-flash')
 
 # Dictionary to bridge the semantic gap
@@ -84,6 +86,9 @@ class ProductRecommender:
                     "category": product['category'],
                     "description": product['description'],
                     "health_goal": product.get('health_goal', ''),
+                    "age_range": product.get('age_range', ''),
+                    "weight_range": product.get('weight_range', ''),
+                    "target_gender": product.get('target_gender', ''),
                     "similarity_score": round(float(score), 2)
                 })
         return results
@@ -130,65 +135,240 @@ def chatbot_consult():
 # B. PRODUCTS & PERSONALIZATION API GROUP (For UI Discovery)
 @app.route('/api/products/search', methods=['POST'])
 def search_products():
-    data = request.json
-    results = recommender.get_recommendations(data.get('query', ''), user_profile=data.get('profile'))
-    return jsonify(results)
+    data = request.json or {}
+    user_profile = data.get('profile')
+    results = recommender.get_recommendations(data.get('query', ''), user_profile=user_profile)
+    return jsonify({
+        "status": "success",
+        "products": results,
+        "query": data.get('query', ''),
+        "count": len(results)
+    })
 
 @app.route('/api/products/personalized', methods=['POST'])
 def get_personalized():
-    profile = request.json.get('profile', {})
-    # Recommendations based on health goals in the profile
+    data = request.json or {}
+    email = data.get('email', '')
+    
+    # Try to load user profile from users database if email is provided
+    profile = {}
+    users = load_users()
+    if email in users and users[email].get('profile'):
+        profile = users[email]['profile']
+    
     goal = profile.get('health_goal', 'general')
     results = recommender.get_recommendations(goal, user_profile=profile)
-    return jsonify(results)
+    
+    return jsonify({
+        "status": "success",
+        "recommendations": results,
+        "count": len(results),
+        "based_on": {
+            "has_profile": bool(profile),
+            "view_history_count": 0,
+            "search_history_count": 0
+        }
+    })
 
 @app.route('/api/products/landing', methods=['GET'])
 def get_landing():
-    return jsonify(recommender.df.sample(min(8, len(recommender.df))).to_dict(orient='records'))
+    # Build dynamic category list with featured products
+    categories_list = []
+    try:
+        grouped = recommender.df.groupby('category')
+        for cat_name, group in grouped:
+            featured = group.sample(1).iloc[0].to_dict() if not group.empty else {}
+            categories_list.append({
+                "category": cat_name,
+                "count": len(group),
+                "featured_product": featured
+            })
+    except Exception as e:
+        print(f"Error grouping categories: {e}")
+        
+    popular_products = recommender.df.sample(min(8, len(recommender.df))).to_dict(orient='records')
+    general_recommendations = recommender.df.sample(min(8, len(recommender.df))).to_dict(orient='records')
+    
+    return jsonify({
+        "status": "success",
+        "categories": categories_list,
+        "popular_products": popular_products,
+        "general_recommendations": general_recommendations,
+        "total_products": len(recommender.df)
+    })
 
 @app.route('/api/products/<int:pid>', methods=['GET'])
 def get_detail(pid):
     product = recommender.df[recommender.df['id'] == pid]
-    return jsonify(product.iloc[0].to_dict()) if not product.empty else (jsonify({"error": "Not found"}), 404)
+    if product.empty:
+        return jsonify({"status": "error", "message": "Product not found"}), 404
+        
+    return jsonify({
+        "status": "success",
+        "product": product.iloc[0].to_dict()
+    })
 
 @app.route('/api/products/similar/<int:pid>', methods=['GET'])
 def get_similar_products(pid):
     product = recommender.df[recommender.df['id'] == pid]
     if product.empty:
-        return jsonify([])
+        return jsonify({"status": "success", "similar_products": [], "count": 0})
+        
     category = product.iloc[0]['category']
     similar = recommender.df[(recommender.df['category'] == category) & (recommender.df['id'] != pid)]
     if similar.empty:
         similar = recommender.df[recommender.df['id'] != pid]
-    return jsonify(similar.sample(min(4, len(similar))).to_dict(orient='records'))
+        
+    similar_list = similar.sample(min(4, len(similar))).to_dict(orient='records')
+    return jsonify({
+        "status": "success",
+        "similar_products": similar_list,
+        "count": len(similar_list)
+    })
+
+@app.route('/api/products/categories', methods=['GET'])
+def get_categories():
+    categories = sorted(list(recommender.df['category'].unique()))
+    return jsonify({
+        "status": "success",
+        "categories": categories,
+        "count": len(categories)
+    })
+
+@app.route('/api/products/view', methods=['POST'])
+def track_view():
+    return jsonify({"status": "success"})
+
+@app.route('/api/products/view-history', methods=['POST'])
+def view_history():
+    products = recommender.df.sample(min(4, len(recommender.df))).to_dict(orient='records')
+    return jsonify({
+        "status": "success",
+        "products": products,
+        "count": len(products)
+    })
 
 # C. AUTH & PROFILE API GROUP (For identity management)
+USERS_FILE = os.path.join(os.path.dirname(__file__), 'data', 'users.json')
+
+def load_users():
+    if os.path.exists(USERS_FILE):
+        try:
+            with open(USERS_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading users: {e}")
+    return {}
+
+def save_users(users):
+    try:
+        os.makedirs(os.path.dirname(USERS_FILE), exist_ok=True)
+        with open(USERS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(users, f, indent=4, ensure_ascii=False)
+    except Exception as e:
+        print(f"Error saving users: {e}")
+
 @app.route('/auth/signup', methods=['POST'])
 def signup():
-    data = request.json
-    email = data.get('email', '')
-    name = data.get('name', 'User')
-    return jsonify({"status": "success", "message": "Registration successful", "user": {"id": 1, "email": email, "name": name, "profile": None}})
+    data = request.json or {}
+    email = data.get('email', '').strip().lower()
+    username = data.get('username', 'User').strip()
+    password = data.get('password', '')
+
+    if not email:
+        return jsonify({"status": "error", "message": "Email is required"}), 400
+
+    users = load_users()
+    if email in users:
+        # If user already exists, update username and password
+        users[email]['name'] = username
+        users[email]['username'] = username
+        if password:
+            users[email]['password'] = password
+    else:
+        users[email] = {
+            "email": email,
+            "name": username,
+            "username": username,
+            "password": password,
+            "profile": None
+        }
+    
+    save_users(users)
+    
+    user_info = {
+        "id": 1,
+        "email": email,
+        "name": username,
+        "username": username,
+        "profile": users[email].get("profile")
+    }
+    return jsonify({"status": "success", "message": "Registration successful", "user": user_info})
 
 @app.route('/auth/login', methods=['POST'])
 def login():
-    data = request.json
-    email = data.get('email', '')
-    return jsonify({"status": "success", "user": {"id": 1, "email": email, "name": "User", "profile": None}})
+    data = request.json or {}
+    email = data.get('email', '').strip().lower()
+    password = data.get('password', '')
+
+    if not email:
+        return jsonify({"status": "error", "message": "Email is required"}), 400
+
+    users = load_users()
+    if email not in users:
+        # For mock compatibility, dynamically auto-create a user if login with new email
+        users[email] = {
+            "email": email,
+            "name": "User",
+            "username": "User",
+            "password": password,
+            "profile": None
+        }
+        save_users(users)
+
+    user_data = users[email]
+    
+    user_info = {
+        "id": 1,
+        "email": email,
+        "name": user_data.get("username", user_data.get("name", "User")),
+        "username": user_data.get("username", user_data.get("name", "User")),
+        "profile": user_data.get("profile")
+    }
+    return jsonify({"status": "success", "user": user_info})
 
 @app.route('/user/profile', methods=['POST'])
 def update_profile():
-    data = request.json
+    data = request.json or {}
+    email = data.get('email', '').strip().lower()
+    
+    profile_data = {
+        "age": data.get("age"),
+        "weight": data.get("weight"),
+        "health_concerns": data.get("health_concerns"),
+        "diseases": data.get("diseases", data.get("health_concerns"))
+    }
+    
+    if email:
+        users = load_users()
+        if email in users:
+            users[email]['profile'] = profile_data
+        else:
+            users[email] = {
+                "email": email,
+                "name": "User",
+                "username": "User",
+                "password": "",
+                "profile": profile_data
+            }
+        save_users(users)
+        
     return jsonify({
         "status": "success", 
         "message": "Personal profile updated",
-        "profile": {
-            "age": data.get("age"),
-            "weight": data.get("weight"),
-            "health_concerns": data.get("health_concerns"),
-            "diseases": data.get("diseases", data.get("health_concerns"))
-        }
+        "profile": profile_data
     })
+
 
 # D. UTILITIES & DEBUG
 @app.route('/health', methods=['GET'])

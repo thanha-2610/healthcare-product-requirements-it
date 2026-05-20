@@ -59,6 +59,7 @@ export interface CategoryInfo {
 export interface SearchParams {
   query: string;
   email?: string;
+  profile?: UserProfile | null;
   limit?: number;
 }
 
@@ -136,7 +137,7 @@ export interface AuthState {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string) => Promise<void>;
+  signup: (email: string, password: string, username: string) => Promise<void>;
   logout: () => void;
   updateProfile: (profile: UserProfile) => Promise<void>;
   clearError: () => void;

@@ -25,22 +25,22 @@ export function ProductCard({ product, index }: { product: Product; index: numbe
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
       </div>
-      <Badge className="w-fit mb-3 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 border-none">
+      <Badge className="w-fit mb-3 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 dark:bg-cyan-900/30 dark:text-cyan-400 border-none">
         {product.category}
       </Badge>
-      <h3 className="font-bold text-lg mb-2 line-clamp-2 dark:text-white group-hover:text-blue-600 transition-colors">
+      <h3 className="font-bold text-lg mb-2 line-clamp-2 dark:text-white group-hover:text-sky-600 transition-colors overflow-hidden h-7">
         {product.name}
       </h3>
-      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 flex-grow mb-4">
+      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 h-[40px] overflow-hidden capitalize">
         {product.description}
       </p>
 
       <Link href={`/product/${product?.id}`} className="mt-auto">
         <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
-          <span className="text-blue-600 dark:text-blue-400 font-medium text-sm flex items-center gap-1 group-hover:underline">
+          <span className="text-sky-600 dark:text-sky-400 font-medium text-sm flex items-center gap-1 group-hover:underline">
             See details
           </span>
-          <div className="w-8 h-8 rounded-full bg-gray-50 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+          <div className="w-8 h-8 rounded-full bg-gray-50 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-sky-600 group-hover:text-white transition-colors">
             <ArrowUpRight className="w-4 h-4" />
           </div>
         </div>

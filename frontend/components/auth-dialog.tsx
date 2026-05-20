@@ -28,6 +28,7 @@ export default function AuthDialog() {
 
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
+      username: "",
       email: "",
       password: "",
       name: "",
@@ -139,17 +140,17 @@ export default function AuthDialog() {
         const emailValue = String(formData.email || "")
           .trim()
           .toLowerCase();
-        const nameValue = String(formData.name || "");
+        const usernameValue = String(formData.username || "");
         const passwordValue = String(formData.password || "");
 
-        if (!emailValue || !passwordValue || !nameValue) {
+        if (!emailValue || !passwordValue || !usernameValue) {
           throw new Error("Please enter all required information");
         }
 
         const signupPayload = {
           email: emailValue,
           password: passwordValue,
-          name: nameValue,
+          username: usernameValue,
         };
 
         const signupRes = await api.post("/auth/signup", signupPayload);
@@ -255,7 +256,12 @@ export default function AuthDialog() {
   if (isLoggedIn && user && user.profile) {
     return (
       <div className="flex items-center gap-4">
-        <span className="font-bold text-cyan-600">Hi, {user?.username}</span>
+        <span 
+          className="font-semibold text-cyan-600 truncate max-w-[120px] sm:max-w-[120px] block"
+          title={`Hi, ${user?.username}`}
+        >
+          Hi, {user?.username}
+        </span>
         <Button
           variant="ghost"
           onClick={handleLogout}
@@ -295,6 +301,23 @@ export default function AuthDialog() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-4">
+                <div>
+                  <Label>User name *</Label>
+                  <Input
+                    {...register("username")}
+                    type="text"
+                    placeholder="username"
+                    className="mt-1"
+                    required
+                    defaultValue={user?.username || ""}
+                    disabled={!!user?.username}
+                  />
+                  {user?.username && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      User name was automatically filled from your account
+                    </p>
+                  )}
+                </div>
                 <div>
                   <Label>Email *</Label>
                   <Input
@@ -397,7 +420,7 @@ export default function AuthDialog() {
           <span> Get Started</span>
         </Button>
 
-        <DialogContent className="sm:max-w-md !rounded-[2rem]">
+        <DialogContent className="sm:max-w-md rounded">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -406,7 +429,7 @@ export default function AuthDialog() {
               exit={{ opacity: 0, x: -10 }}
             >
               <DialogHeader className="mb-4">
-                <DialogTitle className="text-lg font-bold">{step}</DialogTitle>
+                <DialogTitle className="text-lg font-bold uppercase">{step}</DialogTitle>
               </DialogHeader>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -414,10 +437,10 @@ export default function AuthDialog() {
                   <>
                     {step === "signup" && (
                       <div>
-                        <Label>Name *</Label>
+                        <Label>Username *</Label>
                         <Input
-                          {...register("name")}
-                          placeholder="Enter your name"
+                          {...register("username")}
+                          placeholder="Enter your username"
                           className="mt-1"
                           required
                         />
