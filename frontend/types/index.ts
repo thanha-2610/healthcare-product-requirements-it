@@ -4,6 +4,7 @@ export interface UserProfile {
   weight?: number;
   health_concerns: string;
   diseases?: string;
+  allergies?: string;
   updated_at?: string;
 }
 

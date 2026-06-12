@@ -71,7 +71,7 @@ export function ExpandableChatDemo() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const chatListRef = useRef<HTMLDivElement>(null);
-  const { isLoggedIn, setAuthDialogOpen } = useAuthStore();
+  const { isLoggedIn, user, setAuthDialogOpen } = useAuthStore();
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -102,19 +102,27 @@ export function ExpandableChatDemo() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/chatbot", {
+      const userProfile = user?.profile ? {
+        name: user.username || "Khách",
+        age: user.profile.age || 25,
+        allergies: user.profile.allergies || user.profile.diseases || "",
+        history: user.profile.health_concerns || "Bình thường",
+      } : {
+        name: "Khách",
+        age: 25,
+        allergies: [],
+        history: "Bình thường",
+      };
+
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${backendUrl}/api/chatbot`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           query: userMessage,
-          profile: {
-            name: "Khách",
-            age: 25,
-            allergies: [],
-            history: "Bình thường",
-          },
+          profile: userProfile,
         }),
       });
 

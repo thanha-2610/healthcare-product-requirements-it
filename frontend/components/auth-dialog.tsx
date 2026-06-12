@@ -184,7 +184,7 @@ export default function AuthDialog() {
           age: Number(formData.age),
           weight: Number(formData.weight),
           health_concerns: formData.health_concerns,
-          diseases: formData.diseases || formData.health_concerns,
+          diseases: formData.diseases || "",
         };
 
         await updateProfile(profilePayload);
@@ -344,6 +344,14 @@ export default function AuthDialog() {
                     required
                   />
                 </div>
+                <div>
+                  <Label>Medical History & Allergies (Optional)</Label>
+                  <textarea
+                    {...register("diseases")}
+                    className="w-full border p-3 rounded-lg h-20 mt-1"
+                    placeholder="E.g., Hypertension, diabetes, allergy to vitamin C..."
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Age *</Label>
@@ -479,13 +487,21 @@ export default function AuthDialog() {
                         required
                       />
                     </div>
-                    <div>
+                     <div>
                       <Label>Health concerns *</Label>
                       <textarea
                         {...register("health_concerns")}
                         className="w-full border p-3 rounded-lg h-24 mt-1"
                         placeholder="E.g., Headaches, insomnia, stress, digestion..."
                         required
+                      />
+                    </div>
+                    <div>
+                      <Label>Medical History & Allergies (Optional)</Label>
+                      <textarea
+                        {...register("diseases")}
+                        className="w-full border p-3 rounded-lg h-20 mt-1"
+                        placeholder="E.g., Hypertension, diabetes, allergy to vitamin C..."
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
