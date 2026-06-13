@@ -19,6 +19,26 @@ export const metadata: Metadata = {
   title: "Machine Learning Powered | THANHA.CARE",
   description:
     "Personalize healthcare using Machine Learning by analyzing personal data to recommend the most suitable solutions and products",
+  openGraph: {
+    title: "Machine Learning Powered | THANHA.CARE",
+    description:
+      "Personalize healthcare using Machine Learning by analyzing personal data to recommend the most suitable solutions and products",
+    images: [
+      {
+        url: "/banner.jpg",
+        width: 1200,
+        height: 630,
+        alt: "THANHA.CARE Banner",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Machine Learning Powered | THANHA.CARE",
+    description:
+      "Personalize healthcare using Machine Learning by analyzing personal data to recommend the most suitable solutions and products",
+    images: ["/banner.jpg"],
+  },
 };
 
 export default function RootLayout({
