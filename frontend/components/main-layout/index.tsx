@@ -9,7 +9,6 @@ const MainLayout = ({ children }: Props) => {
   return (
     <div>
       <HeroHeader />
-
       <div className="w-full relative min-h-screen">{children}</div>
       <CinematicFooter />
     </div>

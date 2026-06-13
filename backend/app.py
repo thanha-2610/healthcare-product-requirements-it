@@ -26,6 +26,97 @@ synonyms_dict = {
     "digestion": ["bloating", "indigestion", "constipation", "dysbiosis"]
 }
 
+# Dictionary mapping Vietnamese health symptoms/goals to English search keywords
+vi_en_dictionary = {
+    "đau đầu": "headache migraine head pain",
+    "nhức đầu": "headache migraine head pain",
+    "đau nửa đầu": "migraine headache",
+    "mất ngủ": "insomnia sleep difficulty falling asleep sleep disorder",
+    "khó ngủ": "insomnia sleep difficulty falling asleep",
+    "mệt mỏi": "fatigue tiredness weakness chronic fatigue burnout energy",
+    "uể oải": "fatigue sluggish tiredness",
+    "suy nhược": "weakness fatigue neurasthenia",
+    "mắc ói": "nausea vomiting upset stomach",
+    "buồn nôn": "nausea vomiting upset stomach",
+    "nôn": "vomiting nausea",
+    "đau bụng": "stomach ache belly abdominal pain indigestion heartburn",
+    "đau dạ dày": "stomach pain ulcer heartburn stomach acid reflux gastrointestinal",
+    "trào ngược": "acid reflux heartburn stomach",
+    "ợ chua": "heartburn acid reflux indigestion",
+    "ợ nóng": "heartburn acid reflux",
+    "đầy hơi": "bloating gas indigestion flatulence stomach",
+    "khó tiêu": "indigestion bloating gas",
+    "táo bón": "constipation digestion bowel movement",
+    "tiêu chảy": "diarrhea digestion loose stool",
+    "đau khớp": "joint pain arthritis osteoarthritis knee pain stiffness",
+    "nhức khớp": "joint pain arthritis osteoarthritis stiffness",
+    "thoái hóa": "degeneration osteoarthritis joint",
+    "đau lưng": "back pain spinal bone pain",
+    "loãng xương": "osteoporosis weak bones calcium deficiency",
+    "chuột rút": "cramps muscle spasm magnesium",
+    "đau cơ": "muscle pain soreness aches workout recovery",
+    "căng cơ": "muscle tension cramps stress",
+    "rụng tóc": "hair loss hair shedding hair thinning biotin",
+    "hói": "baldness hair loss",
+    "da khô": "dry skin skin dehydration",
+    "nhăn da": "wrinkles skin aging skin glow hyaluronic collagen",
+    "lão hóa": "aging anti-aging skin wrinkles",
+    "mụn": "acne skin pimples hormonal",
+    "lo âu": "anxiety stress nervous tension",
+    "căng thẳng": "stress anxiety burnout mental fatigue work stress",
+    "stress": "stress anxiety burnout tension",
+    "hồi hộp": "palpitations heartbeat anxiety nervous",
+    "tim đập nhanh": "fast heartbeat palpitations",
+    "chóng mặt": "dizziness vertigo lightheaded",
+    "hoa mắt": "dizziness blurred vision eye strain",
+    "ù tai": "tinnitus ringing in ears",
+    "trí nhớ": "memory brain focus cognitive dementia forgetfulness",
+    "hay quên": "forgetfulness memory brain cognitive",
+    "tập trung": "focus concentration brain study",
+    "mắt mờ": "blurred vision eye strain dry eyes",
+    "khô mắt": "dry eyes eye strain screen",
+    "mỏi mắt": "eye strain tired eyes screens",
+    "đề kháng": "immune system immunity resistance frequent flu cold",
+    "miễn dịch": "immune system immunity resistance",
+    "cảm cúm": "flu cold cough congestion sinus",
+    "ho": "cough phlegm respiratory throat sore",
+    "đờm": "phlegm cough mucus respiratory",
+    "phổi": "lung respiratory breathing cough smoke",
+    "huyết áp": "blood pressure hypertension cardiovascular",
+    "tim mạch": "heart cardiovascular circulation cholesterol",
+    "gan": "liver fatty liver hepatitis detox drinking alcohol men gan",
+    "men gan": "liver enzymes liver detox",
+    "tiểu đêm": "nocturia urination prostate frequent urination",
+    "tiểu nhiều": "frequent urination prostate bladder",
+    "sinh lý": "libido erectile dysfunction testosterone male health",
+    "yếu sinh lý": "low libido testosterone sexual energy",
+    "giảm ham muốn": "low libido testosterone sex drive",
+    "dị ứng": "allergy rhinitis sneezing histamine skin redness",
+    "ngứa": "itchy skin allergy eczema",
+    "mùi cơ thể": "body odor bad breath smell",
+    "hôi miệng": "bad breath body odor mouth",
+    "thanh lọc": "detox cleanse colon fiber",
+    "thải độc": "detox liver cleanse",
+    "bổ máu": "anemia iron blood circulation pale skin",
+    "thiếu máu": "anemia iron blood circulation",
+}
+
+def translate_query_to_english(query):
+    query_lower = str(query).lower()
+    translated_terms = []
+    
+    # Check exact matching of Vietnamese phrases in the query
+    for vi_term, en_term in vi_en_dictionary.items():
+        if vi_term in query_lower:
+            translated_terms.append(en_term)
+            
+    # If we found matches, append them to the query to enrich it
+    if translated_terms:
+        enriched_query = query_lower + " " + " ".join(translated_terms)
+        return enriched_query
+    return query_lower
+
+
 # --- 2. ADVANCED RECOMMENDATION SYSTEM CLASS ---
 class ProductRecommender:
     def __init__(self, db_path='healthcare.db', csv_path='healthcare_data_en.csv'):
@@ -139,8 +230,11 @@ class ProductRecommender:
         if self.df.empty:
             return []
             
+        # Dịch và làm giàu truy vấn tiếng Việt sang tiếng Anh
+        enriched_query = translate_query_to_english(query)
+            
         # Chuyển đổi truy vấn người dùng thành Vector [cite: 674]
-        query_vec = self.vectorizer.transform([query.lower()])
+        query_vec = self.vectorizer.transform([enriched_query])
         similarities = cosine_similarity(query_vec, self.tfidf_matrix).flatten()
         related_indices = similarities.argsort()[::-1]
         
@@ -282,6 +376,7 @@ def chatbot_consult():
     1. Only advise based on the above product list. Do not arbitrarily invent other medications.
     2. Explain why the product is suitable for the user's symptoms.
     3. Emphasize safety precautions and advise seeing a doctor if necessary.
+    4. Respond in Vietnamese in a helpful, friendly, and professional tone.
     """
     
     try:
@@ -289,8 +384,28 @@ def chatbot_consult():
         return jsonify({"answer": response.text, "recommended_products": products})
     except Exception as e:
         # Cơ chế dự phòng Fallback khi lỗi dịch vụ AI ngoài [cite: 703, 713]
+        # Tạo phản hồi tiếng Việt thân thiện liệt kê chi tiết các sản phẩm tìm được
+        import random
+        greetings = [
+            "Chào bạn! Rất tiếc là kết nối AI của tôi đang gián đoạn, nhưng tôi đã tìm thấy các sản phẩm phù hợp nhất với các triệu chứng của bạn bên dưới:",
+            "Xin chào! Hệ thống tư vấn AI hiện đang bận một chút, tuy nhiên dựa trên thông tin bạn chia sẻ, đây là những sản phẩm khuyên dùng dành cho bạn:",
+            "Chào bạn, tôi đang gặp lỗi kết nối với máy chủ AI. Dưới đây là các sản phẩm chăm sóc sức khỏe phù hợp nhất với triệu chứng của bạn:"
+        ]
+        
+        answer = random.choice(greetings) + "\n\n"
+        if products:
+            for idx, p in enumerate(products, 1):
+                answer += f"**{idx}. {p['name']}** ({p['category']})\n"
+                answer += f"- Công dụng: {p['description']}\n"
+                if p.get('contraindication'):
+                    answer += f"- Chống chỉ định: {p['contraindication']}\n"
+                answer += "\n"
+            answer += "Lưu ý: Bạn nên đọc kỹ hướng dẫn sử dụng hoặc tham khảo ý kiến bác sĩ/dược sĩ trước khi dùng để đảm bảo an toàn."
+        else:
+            answer = "Chào bạn! Hiện tại tôi chưa tìm thấy sản phẩm nào khớp chính xác với mô tả triệu chứng của bạn. Bạn vui lòng mô tả chi tiết hơn hoặc liên hệ bác sĩ để được tư vấn chính xác nhé."
+            
         return jsonify({
-            "answer": "The chatbot is currently busy, please view the product list below.", 
+            "answer": answer, 
             "recommended_products": products
         })
 
