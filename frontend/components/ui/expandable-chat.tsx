@@ -4,6 +4,7 @@ import React, { useRef, useState } from "react";
 import { X, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 export type ChatPosition = "bottom-right" | "bottom-left";
 export type ChatSize = "sm" | "md" | "lg" | "xl" | "full";
@@ -58,18 +59,19 @@ const ExpandableChat: React.FC<ExpandableChatProps> = ({
       <div
         ref={chatRef}
         className={cn(
-          "flex flex-col bg-background border sm:rounded-lg shadow-md overflow-hidden transition-all duration-250 ease-out sm:absolute sm:w-[90vw] sm:h-[80vh] fixed inset-0 w-full h-full sm:inset-auto",
+          "flex flex-col bg-white border sm:rounded-lg shadow-md overflow-hidden transition-all duration-250 ease-out sm:absolute sm:w-[90vw] sm:h-[80vh] fixed inset-0 w-full h-full sm:inset-auto",
           chatConfig.chatPositions[position],
           chatConfig.dimensions[size],
           isOpen ? chatConfig.states.open : chatConfig.states.closed,
           className,
         )}
       >
+        <div className="absolute w-96 h-96 rounded-full bg-blue-400/20 blur-3xl pointer-events-none" />
         {children}
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-2 right-2 sm:hidden" 
+          className="absolute top-2 right-2 sm:hidden"
           onClick={toggleChat}
         >
           <X className="h-4 w-4" />
@@ -112,8 +114,7 @@ const ExpandableChatFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
 
 ExpandableChatFooter.displayName = "ExpandableChatFooter";
 
-interface ExpandableChatToggleProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ExpandableChatToggleProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: React.ReactNode;
   isOpen: boolean;
   toggleChat: () => void;
@@ -138,7 +139,15 @@ const ExpandableChatToggle: React.FC<ExpandableChatToggleProps> = ({
     {isOpen ? (
       <X className="h-6 w-6" />
     ) : (
-      icon || <MessageCircle className="h-6 w-6" />
+      icon || (
+        <Image
+          src={"/chatbot_logo.png"}
+          alt="chat"
+          height={24}
+          width={24}
+          className="object-contain"
+        />
+      )
     )}
   </Button>
 );

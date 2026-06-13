@@ -17,7 +17,6 @@ import { useToast } from "./ui/toast";
 
 export default function AuthDialog() {
   const [step, setStep] = useState<"login" | "signup" | "survey">("login");
-  const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [forceSurvey, setForceSurvey] = useState(false);
   const [hasCheckedProfile, setHasCheckedProfile] = useState(false); // Thêm state để track
@@ -29,48 +28,63 @@ export default function AuthDialog() {
 
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
+      username: "",
       email: "",
       password: "",
       name: "",
       age: "",
       weight: "",
       health_concerns: "",
-      diseases: ""
-    }
+      diseases: "",
+    },
   });
 
-  const { login, isLoggedIn, user, logout, updateProfile } = useAuthStore();
+  const {
+    isAuthDialogOpen: open,
+    setAuthDialogOpen: setOpen,
+    login,
+    isLoggedIn,
+    user,
+    logout,
+    updateProfile,
+  } = useAuthStore();
 
   // KIỂM TRA PROFILE CHỈ MỘT LẦN KHI MOUNT
   useEffect(() => {
-    console.log("🔍 Initial profile check - isLoggedIn:", isLoggedIn, "user:", user);
-    
+    console.log(
+      "🔍 Initial profile check - isLoggedIn:",
+      isLoggedIn,
+      "user:",
+      user,
+    );
     // Chỉ check một lần và không bị vòng lặp
     if (!hasCheckedProfile && isLoggedIn && user) {
       console.log(" Checking user profile...");
       setHasCheckedProfile(true);
-      
+
       // Kiểm tra cả localStorage xem đã có profile chưa
       const savedProfile = localStorage.getItem("user_profile");
       console.log("💾 Saved profile from localStorage:", savedProfile);
-      
-      if (user.profile === null && !savedProfile) {
+
+      if (!user.profile && !savedProfile) {
         console.log("🚨 User chưa có profile -> mở khảo sát");
-        
+
         if (user.email) {
           setValue("email", user.email);
         }
-        
+
         setForceSurvey(true);
         setStep("survey");
-        
+
         // Chỉ mở dialog nếu chưa mở trước đó
         if (!hasOpenedSurveyRef.current) {
           setOpen(true);
           hasOpenedSurveyRef.current = true;
         }
-      } else if (user.profile === null && savedProfile) {
-        console.log("User có profile trong localStorage nhưng chưa trong store");
+      } else if (!user.profile && savedProfile) {
+        console.log(
+          "User có profile trong localStorage nhưng chưa trong store",
+        );
         try {
           const profileData = JSON.parse(savedProfile);
           updateProfile(profileData);
@@ -84,30 +98,32 @@ export default function AuthDialog() {
   const onSubmit = async (formData: any) => {
     // Tránh submit nhiều lần
     if (isSubmittingRef.current) return;
-    
+
     isSubmittingRef.current = true;
     setIsLoading(true);
-    
+
     try {
       if (step === "login") {
-        const emailValue = String(formData.email || "").trim().toLowerCase();
+        const emailValue = String(formData.email || "")
+          .trim()
+          .toLowerCase();
         const passwordValue = String(formData.password || "");
-        
+
         if (!emailValue || !passwordValue) {
-          throw new Error("Vui lòng nhập đầy đủ email và mật khẩu");
+          throw new Error("Please enter both email and password");
         }
-        
+
         const loginPayload = {
           email: emailValue,
-          password: passwordValue
+          password: passwordValue,
         };
-        
+
         const res = await api.post("/auth/login", loginPayload);
-        
+
         if (res.data.status === "success") {
           await login(emailValue, passwordValue);
-          
-          if (res.data.user.profile === null) {
+
+          if (!res.data.user.profile) {
             console.log("User chưa có profile, chuyển sang khảo sát");
             setStep("survey");
             setForceSurvey(true);
@@ -118,33 +134,34 @@ export default function AuthDialog() {
             reset();
           }
         } else {
-          throw new Error(res.data.message || "Đăng nhập thất bại");
+          throw new Error(res.data.message || "Login failed");
         }
-        
       } else if (step === "signup") {
-        const emailValue = String(formData.email || "").trim().toLowerCase();
-        const nameValue = String(formData.name || "");
+        const emailValue = String(formData.email || "")
+          .trim()
+          .toLowerCase();
+        const usernameValue = String(formData.username || "");
         const passwordValue = String(formData.password || "");
-        
-        if (!emailValue || !passwordValue || !nameValue) {
-          throw new Error("Vui lòng nhập đầy đủ thông tin");
+
+        if (!emailValue || !passwordValue || !usernameValue) {
+          throw new Error("Please enter all required information");
         }
-        
+
         const signupPayload = {
           email: emailValue,
           password: passwordValue,
-          name: nameValue
+          username: usernameValue,
         };
-        
+
         const signupRes = await api.post("/auth/signup", signupPayload);
-        
+
         if (signupRes.data.status === "success") {
           console.log("Auto login after signup");
           const loginRes = await api.post("/auth/login", {
             email: emailValue,
-            password: passwordValue
+            password: passwordValue,
           });
-          
+
           if (loginRes.data.status === "success") {
             console.log(" Auto login success");
             await login(emailValue, passwordValue);
@@ -153,67 +170,53 @@ export default function AuthDialog() {
             setOpen(true);
           }
         } else {
-          throw new Error(signupRes.data.message || "Đăng ký thất bại");
+          throw new Error(signupRes.data.message || "Registration failed");
         }
-        
-      } else if (step === "survey") { 
+      } else if (step === "survey") {
         const userEmail = user?.email || formData.email;
         console.log(" Email for survey:", userEmail);
-        
+
         if (!userEmail) {
-          throw new Error("Không tìm thấy email. Vui lòng đăng nhập lại.");
+          throw new Error("Email not found. Please log in again.");
         }
-        
+
         const profilePayload = {
-          email: userEmail,
-          age: formData.age,
-          weight: formData.weight,
+          age: Number(formData.age),
+          weight: Number(formData.weight),
           health_concerns: formData.health_concerns,
-          diseases: formData.diseases || formData.health_concerns
-        }; 
-        
-        const profileRes = await api.post("/user/profile", profilePayload); 
-        
-        if (profileRes.data.status === "success") {
-          // Cập nhật profile trong store
-          updateProfile(profileRes.data.profile);
-          
-          // Lưu vào localStorage
-          localStorage.setItem("user_profile", JSON.stringify(profileRes.data.profile));
-          
-          // Reset các state
-          setForceSurvey(false);
-          hasOpenedSurveyRef.current = false;
-          
-          // Đóng dialog và reset form
-          setOpen(false);
-          reset();
-          
-          console.log(" Profile saved successfully!");
-          
-          // THAY VÌ RELOAD, chuyển về step login và đóng
-          setStep("login");
-          
-          // Hiển thị thông báo thành công
-          toast.success(" Khảo sát đã được lưu thành công!");
-          
-        } else {
-          throw new Error(profileRes.data.message || "Lưu profile thất bại");
-        }
+          diseases: formData.diseases || "",
+        };
+
+        await updateProfile(profilePayload);
+
+        // Reset các state
+        setForceSurvey(false);
+        hasOpenedSurveyRef.current = false;
+
+        // Đóng dialog và reset form
+        setOpen(false);
+        reset();
+
+        console.log(" Profile saved successfully!");
+
+        // THAY VÌ RELOAD, chuyển về step login và đóng
+        setStep("login");
+
+        // Hiển thị thông báo thành công
+        toast.success(" Survey saved successfully!");
       }
-      
     } catch (e: any) {
       console.error("Error in onSubmit:", e);
-      
-      let errorMessage = "Có lỗi xảy ra, vui lòng thử lại!";
-      
+
+      let errorMessage = "An error occurred, please try again!";
+
       if (e.response?.data?.message) {
         errorMessage = e.response.data.message;
       } else if (e.message) {
         errorMessage = e.message;
       }
-      
-      toast.error(`Lỗi: ${errorMessage}`);
+
+      toast.error(`Error: ${errorMessage}`);
     } finally {
       setIsLoading(false);
       isSubmittingRef.current = false;
@@ -222,12 +225,13 @@ export default function AuthDialog() {
 
   // Xử lý khi đóng dialog
   const handleDialogClose = (isOpen: boolean) => {
-    
     if (forceSurvey && !isOpen) {
-      toast.warning("Vui lòng hoàn thành khảo sát sức khỏe để tiếp tục sử dụng ứng dụng!");
+      toast.warning(
+        "Please complete the health survey to continue using the app!",
+      );
       return;
     }
-    
+
     setOpen(isOpen);
     if (!isOpen) {
       reset();
@@ -238,7 +242,7 @@ export default function AuthDialog() {
   };
 
   // Xử lý logout
-  const handleLogout = () => { 
+  const handleLogout = () => {
     logout();
     localStorage.removeItem("user_profile");
     setStep("login");
@@ -249,16 +253,21 @@ export default function AuthDialog() {
   };
 
   // Nếu đã login và có profile -> hiển thị thông tin user
-  if (isLoggedIn && user && user.profile !== null) { 
+  if (isLoggedIn && user && user.profile) {
     return (
       <div className="flex items-center gap-4">
-        <span className="font-bold text-cyan-600">Hi, {user?.name}</span>
-        <Button 
-          variant="ghost" 
-          onClick={handleLogout} 
+        <span 
+          className="font-semibold text-cyan-600 truncate max-w-[120px] sm:max-w-[120px] block"
+          title={`Hi, ${user?.username}`}
+        >
+          Hi, {user?.username}
+        </span>
+        <Button
+          variant="ghost"
+          onClick={handleLogout}
           className="text-red-500 hover:text-red-700"
         >
-          Đăng xuất
+          Logout
         </Button>
       </div>
     );
@@ -269,29 +278,46 @@ export default function AuthDialog() {
     console.log(" User đã login nhưng chưa có profile, hiển thị nút khảo sát");
     return (
       <>
-        <Button 
+        <Button
           className="rounded-full bg-amber-600 px-8 hover:bg-amber-700"
-          onClick={() => { 
+          onClick={() => {
             setOpen(true);
           }}
         >
-          Hoàn thành khảo sát
+          Complete survey
         </Button>
-        
+
         {/* DIALOG survey */}
         <Dialog open={open} onOpenChange={handleDialogClose}>
           <DialogContent className="sm:max-w-md !rounded-[2rem]">
             <DialogHeader className="mb-4">
               <DialogTitle className="text-lg font-bold">
-                Khảo sát sức khỏe
+                Health Survey
               </DialogTitle>
               <p className="text-sm text-amber-600 font-medium">
-                 Vui lòng hoàn thành khảo sát để tiếp tục
+                Please complete the survey to continue
               </p>
             </DialogHeader>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-4">
+                <div>
+                  <Label>User name *</Label>
+                  <Input
+                    {...register("username")}
+                    type="text"
+                    placeholder="username"
+                    className="mt-1"
+                    required
+                    defaultValue={user?.username || ""}
+                    disabled={!!user?.username}
+                  />
+                  {user?.username && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      User name was automatically filled from your account
+                    </p>
+                  )}
+                </div>
                 <div>
                   <Label>Email *</Label>
                   <Input
@@ -304,35 +330,45 @@ export default function AuthDialog() {
                     disabled={!!user?.email}
                   />
                   {user?.email && (
-                    <p className="text-xs text-gray-500 mt-1">Email đã được tự động điền từ tài khoản của bạn</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Email was automatically filled from your account
+                    </p>
                   )}
                 </div>
                 <div>
-                  <Label>Vấn đề sức khỏe bạn quan tâm *</Label>
+                  <Label>Health concerns *</Label>
                   <textarea
                     {...register("health_concerns")}
                     className="w-full border p-3 rounded-lg h-24 mt-1"
-                    placeholder="Ví dụ: Đau đầu, mất ngủ, căng thẳng, dạ dày..."
+                    placeholder="E.g., Headaches, insomnia, stress, digestion..."
                     required
+                  />
+                </div>
+                <div>
+                  <Label>Medical History & Allergies (Optional)</Label>
+                  <textarea
+                    {...register("diseases")}
+                    className="w-full border p-3 rounded-lg h-20 mt-1"
+                    placeholder="E.g., Hypertension, diabetes, allergy to vitamin C..."
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Tuổi *</Label>
+                    <Label>Age *</Label>
                     <Input
                       {...register("age")}
                       type="number"
-                      placeholder="Tuổi"
+                      placeholder="Age"
                       className="mt-1"
                       required
                     />
                   </div>
                   <div>
-                    <Label>Cân nặng (kg) *</Label>
+                    <Label>Weight (kg) *</Label>
                     <Input
                       {...register("weight")}
                       type="number"
-                      placeholder="Cân nặng"
+                      placeholder="Weight"
                       step="0.1"
                       className="mt-1"
                       required
@@ -340,7 +376,7 @@ export default function AuthDialog() {
                   </div>
                 </div>
               </div>
-              
+
               <Button
                 type="submit"
                 className="w-full py-6 bg-cyan-600 rounded-xl font-bold hover:bg-cyan-700 disabled:opacity-50"
@@ -349,12 +385,26 @@ export default function AuthDialog() {
                 {isLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
                     </svg>
-                    Đang xử lý...
+                    Processing...
                   </span>
-                ) : "Lưu khảo sát"}
+                ) : (
+                  "Save survey"
+                )}
               </Button>
             </form>
           </DialogContent>
@@ -367,17 +417,18 @@ export default function AuthDialog() {
   return (
     <>
       <Dialog open={open} onOpenChange={handleDialogClose}>
-        <Button 
-          className="rounded-full bg-cyan-600 px-8 hover:bg-cyan-700"
+        <Button
           onClick={() => {
             console.log(" Opening dialog, current step:", step);
             setOpen(true);
           }}
+          asChild
+          size="sm"
         >
-          Bắt đầu
+          <span> Get Started</span>
         </Button>
-        
-        <DialogContent className="sm:max-w-md !rounded-[2rem]">
+
+        <DialogContent className="sm:max-w-md rounded">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -386,13 +437,7 @@ export default function AuthDialog() {
               exit={{ opacity: 0, x: -10 }}
             >
               <DialogHeader className="mb-4">
-                <DialogTitle className="text-lg font-bold">
-                  {step === "login"
-                    ? "Đăng nhập"
-                    : step === "signup"
-                      ? "Đăng ký"
-                      : "Khảo sát sức khỏe"}
-                </DialogTitle>
+                <DialogTitle className="text-lg font-bold uppercase">{step}</DialogTitle>
               </DialogHeader>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -400,10 +445,10 @@ export default function AuthDialog() {
                   <>
                     {step === "signup" && (
                       <div>
-                        <Label>Họ tên *</Label>
+                        <Label>Username *</Label>
                         <Input
-                          {...register("name")}
-                          placeholder="Nhập họ tên của bạn"
+                          {...register("username")}
+                          placeholder="Enter your username"
                           className="mt-1"
                           required
                         />
@@ -420,11 +465,11 @@ export default function AuthDialog() {
                       />
                     </div>
                     <div>
-                      <Label>Mật khẩu *</Label>
+                      <Label>Password *</Label>
                       <Input
                         {...register("password")}
                         type="password"
-                        placeholder="Ít nhất 6 ký tự"
+                        placeholder="At least 6 characters"
                         className="mt-1"
                         required
                       />
@@ -442,32 +487,40 @@ export default function AuthDialog() {
                         required
                       />
                     </div>
-                    <div>
-                      <Label>Vấn đề sức khỏe bạn quan tâm *</Label>
+                     <div>
+                      <Label>Health concerns *</Label>
                       <textarea
                         {...register("health_concerns")}
                         className="w-full border p-3 rounded-lg h-24 mt-1"
-                        placeholder="Ví dụ: Đau đầu, mất ngủ, căng thẳng, dạ dày..."
+                        placeholder="E.g., Headaches, insomnia, stress, digestion..."
                         required
+                      />
+                    </div>
+                    <div>
+                      <Label>Medical History & Allergies (Optional)</Label>
+                      <textarea
+                        {...register("diseases")}
+                        className="w-full border p-3 rounded-lg h-20 mt-1"
+                        placeholder="E.g., Hypertension, diabetes, allergy to vitamin C..."
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>Tuổi *</Label>
+                        <Label>Age *</Label>
                         <Input
                           {...register("age")}
                           type="number"
-                          placeholder="Tuổi"
+                          placeholder="Age"
                           className="mt-1"
                           required
                         />
                       </div>
                       <div>
-                        <Label>Cân nặng (kg) *</Label>
+                        <Label>Weight (kg) *</Label>
                         <Input
                           {...register("weight")}
                           type="number"
-                          placeholder="Cân nặng"
+                          placeholder="Weight"
                           step="0.1"
                           className="mt-1"
                           required
@@ -476,7 +529,7 @@ export default function AuthDialog() {
                     </div>
                   </div>
                 )}
-                
+
                 <Button
                   type="submit"
                   className="w-full py-6 bg-cyan-600 rounded-xl font-bold hover:bg-cyan-700 disabled:opacity-50"
@@ -485,32 +538,51 @@ export default function AuthDialog() {
                   {isLoading ? (
                     <span className="flex items-center justify-center gap-2">
                       <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
                       </svg>
-                      Đang xử lý...
+                      Processing...
                     </span>
-                  ) : step === "login"
-                    ? "Đăng nhập"
-                    : step === "signup"
-                      ? "Đăng ký"
-                      : "Lưu khảo sát"}
+                  ) : step === "login" ? (
+                    "Login"
+                  ) : step === "signup" ? (
+                    "Sign up"
+                  ) : (
+                    "Save survey"
+                  )}
                 </Button>
               </form>
-              
+
               {step !== "survey" && (
                 <div className="mt-4 text-center">
-                  <button 
+                  <button
                     onClick={() => {
-                      console.log("Switching step from", step, "to", step === "login" ? "signup" : "login");
+                      console.log(
+                        "Switching step from",
+                        step,
+                        "to",
+                        step === "login" ? "signup" : "login",
+                      );
                       reset();
                       setStep(step === "login" ? "signup" : "login");
                     }}
                     className="text-cyan-600 hover:text-cyan-800 font-medium text-sm"
                   >
-                    {step === "login" 
-                      ? "Chưa có tài khoản? Đăng ký ngay" 
-                      : "Đã có tài khoản? Đăng nhập"}
+                    {step === "login"
+                      ? "Don't have an account? Sign up now"
+                      : "Already have an account? Login"}
                   </button>
                 </div>
               )}

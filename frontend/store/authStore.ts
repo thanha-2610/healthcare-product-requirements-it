@@ -10,6 +10,8 @@ export const useAuthStore = create<AuthState>()(
       isLoggedIn: false,
       isLoading: false,
       error: null,
+      isAuthDialogOpen: false,
+      setAuthDialogOpen: (open: boolean) => set({ isAuthDialogOpen: open }),
 
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
@@ -36,10 +38,10 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      signup: async (email: string, password: string, name: string) => {
+      signup: async (email: string, password: string, username: string) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await authApi.signup(email, password, name);
+          const response = await authApi.signup(email, password, username);
           
           if (response.status === 'success' && response.user) {
             // Sau khi đăng ký, tự động đăng nhập

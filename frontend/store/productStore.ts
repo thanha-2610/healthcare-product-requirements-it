@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ProductState, Product, ProductDetail, CategoryInfo } from '@/types';
+import { ProductState} from '@/types';
 import { productApi } from '@/lib/api';
 import { useAuthStore } from './authStore';
 
@@ -18,26 +18,27 @@ export const useProductStore = create<ProductState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const { user } = useAuthStore.getState();
-      
+
       const response = await productApi.search({
         query,
         email: user?.email,
+        profile: user?.profile || null,
         limit: 20
       });
-      
+
       if (response.status === 'success') {
-        set({ 
+        set({
           searchResults: response.products,
-          isLoading: false 
+          isLoading: false
         });
       } else {
         throw new Error(response.message || 'Tìm kiếm thất bại');
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Lỗi tìm kiếm';
-      set({ 
+      set({
         error: errorMessage,
-        isLoading: false 
+        isLoading: false
       });
     }
   },
@@ -47,25 +48,25 @@ export const useProductStore = create<ProductState>((set, get) => ({
     try {
       const { user } = useAuthStore.getState();
       if (!user) throw new Error('Vui lòng đăng nhập');
-      
+
       const response = await productApi.getPersonalized({
         email: user.email,
         limit: 10
       });
-      
+
       if (response.status === 'success') {
-        set({ 
+        set({
           personalizedRecommendations: response.recommendations,
-          isLoading: false 
+          isLoading: false
         });
       } else {
         throw new Error(response.message || 'Lấy gợi ý thất bại');
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Lỗi gợi ý';
-      set({ 
+      set({
         error: errorMessage,
-        isLoading: false 
+        isLoading: false
       });
     }
   },
@@ -74,66 +75,57 @@ export const useProductStore = create<ProductState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await productApi.getLandingPage();
-      
+
       if (response.status === 'success') {
-        set({ 
+        set({
           categories: response.categories,
           popularProducts: response.popular_products,
           personalizedRecommendations: response.general_recommendations,
-          isLoading: false 
+          isLoading: false
         });
       } else {
         throw new Error(response.message || 'Lấy dữ liệu thất bại');
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Lỗi lấy dữ liệu';
-      set({ 
+      set({
         error: errorMessage,
-        isLoading: false 
+        isLoading: false
       });
     }
   },
- 
+
   getProductDetail: async (id: number) => {
     set({ isLoading: true, error: null });
     try {
       const { user } = useAuthStore.getState();
-      
+
       // 1. Lấy chi tiết sản phẩm
-      const detailResponse = await productApi.getProductDetail(id);
-      
-      if (detailResponse.status === "success") {
-        // 2. Lấy sản phẩm tương tự
-        const similarResponse = await productApi.getSimilarProducts(id);
-        
-        // 3. Lưu lịch sử xem
+      const detailResponse: any = await productApi.getProductDetail(id);
+
+      if (detailResponse.id || detailResponse.status === "success") {
+        const product = detailResponse.product || detailResponse;
+
+        // Lưu lịch sử xem
         if (user?.email) {
           await productApi.trackView({
             email: user.email,
             product_id: id
-          });
-          
-          // Cập nhật view history
-          await get().getViewHistory();
+          }).catch(e => console.error("Tracking error:", e));
         }
-        
-        set({ 
-          currentProduct: {
-            ...detailResponse.product,
-            similar_products: similarResponse.status === "success" 
-              ? similarResponse.similar_products 
-              : []
-          },
-          isLoading: false 
+
+        set({
+          currentProduct: product,
+          isLoading: false
         });
       } else {
-        throw new Error(detailResponse.message || "Lấy chi tiết thất bại");
+        throw new Error(detailResponse.message || detailResponse.error || "Lấy chi tiết thất bại");
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || "Lỗi lấy chi tiết";
-      set({ 
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || "Lỗi lấy chi tiết";
+      set({
         error: errorMessage,
-        isLoading: false 
+        isLoading: false
       });
     }
   },
@@ -142,7 +134,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
     try {
       const { user } = useAuthStore.getState();
       if (!user?.email) return;
-      
+
       await productApi.trackView({
         email: user.email,
         product_id: productId
@@ -156,9 +148,9 @@ export const useProductStore = create<ProductState>((set, get) => ({
     try {
       const { user } = useAuthStore.getState();
       if (!user?.email) return;
-      
+
       const response = await productApi.getViewHistory(user.email);
-      
+
       if (response.status === 'success') {
         set({ viewHistory: response.products });
       }
@@ -168,6 +160,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
   },
 
   clearSearchResults: () => set({ searchResults: [] }),
-  
+
   clearError: () => set({ error: null }),
 }));

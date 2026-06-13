@@ -17,8 +17,8 @@ import {
 
 export const authApi = {
   // Đăng ký
-  signup: async (email: string, password: string, name: string): Promise<AuthResponse> => {
-    const response = await api.post('/auth/signup', { email, password, name });
+  signup: async (email: string, password: string, username: string): Promise<AuthResponse> => {
+    const response = await api.post('/auth/signup', { email, password, username });
     return response.data;
   },
 

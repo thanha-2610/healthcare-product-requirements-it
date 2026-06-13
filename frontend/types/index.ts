@@ -4,15 +4,16 @@ export interface UserProfile {
   weight?: number;
   health_concerns: string;
   diseases?: string;
+  allergies?: string;
   updated_at?: string;
 }
 
 export interface User {
   email: string;
-  name: string;
+  username: string;
   profile: UserProfile | null;
   created_at?: string;
-}
+} 
 
 export interface AuthResponse {
   status: "success" | "error";
@@ -26,7 +27,7 @@ export interface ProfileResponse {
   message?: string;
 }
 
-// PRODUCT TYPES 
+// PRODUCT TYPES
 export interface Product {
   id: number;
   name: string;
@@ -59,6 +60,7 @@ export interface CategoryInfo {
 export interface SearchParams {
   query: string;
   email?: string;
+  profile?: UserProfile | null;
   limit?: number;
 }
 
@@ -136,10 +138,12 @@ export interface AuthState {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string) => Promise<void>;
+  signup: (email: string, password: string, username: string) => Promise<void>;
   logout: () => void;
   updateProfile: (profile: UserProfile) => Promise<void>;
   clearError: () => void;
+  isAuthDialogOpen: boolean;
+  setAuthDialogOpen: (open: boolean) => void;
 }
 
 export interface ProductState {
