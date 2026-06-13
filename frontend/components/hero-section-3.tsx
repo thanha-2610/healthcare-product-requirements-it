@@ -69,7 +69,20 @@ export function HeroSection() {
                   with high accuracy and maximum safety
                 </p>
 
-                <form action="" className="mt-12 mx-auto max-w-sm">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const input = e.currentTarget.querySelector(
+                      "input[type='text']",
+                    ) as HTMLInputElement;
+                    if (input?.value.trim()) {
+                      router.push(
+                        `/search?q=${encodeURIComponent(input.value.trim())}`,
+                      );
+                    }
+                  }}
+                  className="mt-12 mx-auto max-w-sm"
+                >
                   <div className="bg-background has-[input:focus]:ring-muted relative grid grid-cols-[1fr_auto] pr-1.5 items-center rounded-[1rem] border shadow shadow-zinc-950/5 has-[input:focus]:ring-2 lg:pr-0">
                     <Search className="pointer-events-none absolute inset-y-0 left-4 my-auto size-4" />
 
@@ -77,33 +90,14 @@ export function HeroSection() {
                       type="text"
                       className="h-12 w-full bg-transparent pl-12 focus:outline-none"
                       placeholder="Search for health products..."
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          const query = (e.target as HTMLInputElement).value;
-                          if (query.trim()) {
-                            router.push(
-                              `/search?q=${encodeURIComponent(query)}`,
-                            );
-                          }
-                        }
-                      }}
                     />
 
                     <div className="md:pr-1.5 lg:pr-0">
                       <Button
+                        type="submit"
                         aria-label="submit"
                         size="sm"
                         className="rounded-[0.5rem]"
-                        onClick={() => {
-                          const input = document.querySelector(
-                            "input",
-                          ) as HTMLInputElement;
-                          if (input?.value.trim()) {
-                            router.push(
-                              `/search?q=${encodeURIComponent(input.value)}`,
-                            );
-                          }
-                        }}
                       >
                         <span className="hidden md:block">Search</span>
                         <SendHorizonal
